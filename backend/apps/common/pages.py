@@ -20,7 +20,15 @@ def error_404(request, exception=None):
 
 
 def error_500(request):
-    return render(request, "errors/500.html", status=500)
+    import sys, traceback
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    error_details = str(exc_value) if exc_value else ""
+    if error_details:
+        print(f"DJANGO 500 ERROR: {error_details}")
+        traceback.print_exc()
+    return render(request, "errors/500.html", {
+        "error_details": error_details,
+    }, status=500)
 
 
 def landing(request):
