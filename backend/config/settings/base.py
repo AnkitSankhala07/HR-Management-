@@ -28,8 +28,38 @@ def env_bool(key: str, default: bool = False) -> bool:
 
 SECRET_KEY = env("SECRET_KEY", "dev-insecure-change-me")
 DEBUG = env_bool("DEBUG", False)
-ALLOWED_HOSTS = [h.strip() for h in env("ALLOWED_HOSTS", "localhost,127.0.0.1,.vercel.app,.onrender.com").split(",") if h.strip()]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in env("CSRF_TRUSTED_ORIGINS", "https://*.vercel.app,https://*.onrender.com,http://localhost:8000,http://127.0.0.1:8000").split(",") if o.strip()]
+
+raw_hosts = env("ALLOWED_HOSTS", "localhost,127.0.0.1,.vercel.app,.onrender.com")
+_hosts = []
+for h in raw_hosts.split(","):
+    h = h.strip()
+    if not h or h.upper() == "ALLOWED_HOSTS":
+        continue
+    h = h.replace("https://", "").replace("http://", "").split("/")[0].split(":")[0]
+    if h and h not in _hosts:
+        _hosts.append(h)
+for fallback_host in ("localhost", "127.0.0.1", ".vercel.app", ".onrender.com"):
+    if fallback_host not in _hosts:
+        _hosts.append(fallback_host)
+ALLOWED_HOSTS = _hosts
+
+raw_csrf = env("CSRF_TRUSTED_ORIGINS", "https://*.vercel.app,https://*.onrender.com,http://localhost:8000,http://127.0.0.1:8000")
+_origins = []
+for o in raw_csrf.split(","):
+    o = o.strip()
+    if not o or o.upper() == "CSRF_TRUSTED_ORIGINS":
+        continue
+    if not (o.startswith("http://") or o.startswith("https://")):
+        if "." in o:
+            o = f"https://{o}"
+        else:
+            continue
+    if o and o not in _origins:
+        _origins.append(o)
+for fallback_origin in ("https://*.vercel.app", "https://*.onrender.com", "http://localhost:8000", "http://127.0.0.1:8000"):
+    if fallback_origin not in _origins:
+        _origins.append(fallback_origin)
+CSRF_TRUSTED_ORIGINS = _origins
 
 INSTALLED_APPS = [
     "django.contrib.admin",
