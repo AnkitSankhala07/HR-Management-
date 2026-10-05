@@ -104,23 +104,31 @@ uvicorn app.main:app --port 8001 --reload
 
 ---
 
-## 🔑 Demo Accounts
+## 🔑 Demo Credentials & Accounts
 
-All pre-seeded demo accounts use the password: **`Dayflow@2026`**
+> 📄 For the complete access permissions matrix and walkthrough, see **[CREDENTIALS.md](CREDENTIALS.md)**.
 
-* **Super Admin**: `superadmin@dayflow.dev`
-* **HR Admin**: `hradmin@dayflow.dev`
-* **HR Manager**: `hrmanager@dayflow.dev`
-* **Manager**: `manager@dayflow.dev`
-* **Recruiter**: `recruiter@dayflow.dev`
-* **Employee**: `employee@dayflow.dev`
+All pre-seeded demo accounts share the password: **`Dayflow@2026`**
+
+| Role | Name | Email | Password | Primary Permissions |
+| :--- | :--- | :--- | :--- | :--- |
+| **Super Admin** | Sanjay Kapoor | `superadmin@dayflow.dev` | `Dayflow@2026` | Full platform control, user management, `/admin/`, audit logs |
+| **HR Admin** | Hetal Shah | `hradmin@dayflow.dev` | `Dayflow@2026` | Employee records, payroll processing, leave approvals, reports |
+| **HR Manager** | Himani Desai | `hrmanager@dayflow.dev` | `Dayflow@2026` | Employee lifecycle, team attendance & leave oversight |
+| **Manager** | Manav Joshi | `manager@dayflow.dev` | `Dayflow@2026` | Team oversight, attendance tracking, leave reviews, goals |
+| **Recruiter** | Ritika Mehta | `recruiter@dayflow.dev` | `Dayflow@2026` | Jobs, candidate ATS pipeline, interviews, offer letters |
+| **Employee** | Esha Patel | `employee@dayflow.dev` | `Dayflow@2026` | Clock-in/out, leave requests, salary slips, goals, skills |
 
 ---
 
-## 🌐 URLs & Documentation
+## 🌐 Live Deployments & URLs
 
-* **Web Application**: http://localhost:8000/
-* **Public Careers Board**: http://localhost:8000/careers/
+* **Render Live Application**: [https://hr-management-ew2l.onrender.com/](https://hr-management-ew2l.onrender.com/)
+* **Vercel Frontend URL**: [https://hr-management-olive-six.vercel.app/](https://hr-management-olive-six.vercel.app/)
+* **Public Careers Board**: [https://hr-management-ew2l.onrender.com/careers/](https://hr-management-ew2l.onrender.com/careers/)
+* **Sign In Page**: [https://hr-management-ew2l.onrender.com/login/](https://hr-management-ew2l.onrender.com/login/)
+* **Django Admin**: [https://hr-management-ew2l.onrender.com/admin/](https://hr-management-ew2l.onrender.com/admin/)
+* **Local Web Application**: http://localhost:8000/
 * **Django REST API Docs (Swagger)**: http://localhost:8000/api/docs/
-* **Django REST API Docs (ReDoc)**: http://localhost:8000/api/redoc/
 * **FastAPI Copilot & Analytics Docs**: http://localhost:8001/docs
+
