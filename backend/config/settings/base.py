@@ -81,12 +81,24 @@ TEMPLATES = [{
     ]},
 }]
 
-# ---- Database: MySQL 8+ (or SQLite if configured) ----
-if env("DATABASE_ENGINE", "").lower() in ("sqlite", "sqlite3") or env_bool("USE_SQLITE", False):
+IS_VERCEL = bool(os.getenv("VERCEL"))
+
+# ---- Database: MySQL 8+ (or SQLite if configured / fallback) ----
+if env("DATABASE_ENGINE", "").lower() in ("sqlite", "sqlite3") or env_bool("USE_SQLITE", True) or not env("DATABASE_HOST"):
+    if IS_VERCEL:
+        import shutil
+        import tempfile
+        tmp_db = Path(tempfile.gettempdir()) / "db.sqlite3"
+        bundled_db = BASE_DIR / "db.sqlite3"
+        if bundled_db.exists() and not tmp_db.exists():
+            shutil.copy2(bundled_db, tmp_db)
+        sqlite_name = tmp_db
+    else:
+        sqlite_name = BASE_DIR / "db.sqlite3"
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": sqlite_name,
         }
     }
 else:

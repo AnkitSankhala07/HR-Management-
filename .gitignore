@@ -9,5 +9,3 @@ backend/staticfiles/
 venv/
 .idea/
 .vscode/
-*.sqlite3
-db.sqlite3
