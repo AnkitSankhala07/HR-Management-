@@ -71,14 +71,30 @@ def team(request):
 
 
 def careers(request):
-    return render(request, "public/careers.html", {"jobs": Job.objects.filter(status="OPEN").select_related("department")})
+    jobs = Job.objects.filter(status="OPEN").select_related("department").order_by("-published_at", "-id")
+    dept_names = sorted(list({j.department.name for j in jobs if j.department}))
+    locations = sorted(list({j.location for j in jobs if j.location}))
+    return render(request, "public/careers.html", {
+        "jobs": jobs,
+        "departments": dept_names,
+        "locations": locations,
+        "total_jobs": jobs.count(),
+        "title": "Careers · Join the Dayflow Team",
+    })
 
 
 def career_detail(request, pk):
     job = Job.objects.filter(pk=pk, status="OPEN").select_related("department").first()
     if not job:
         raise Http404
-    return render(request, "public/job.html", {"job": job})
+    skills_list = [s.strip() for s in job.skills_required.split(",") if s.strip()] if job.skills_required else []
+    related_jobs = Job.objects.filter(status="OPEN", department=job.department).exclude(pk=job.pk)[:3]
+    return render(request, "public/job.html", {
+        "job": job,
+        "skills_list": skills_list,
+        "related_jobs": related_jobs,
+        "title": f"{job.title} · Careers",
+    })
 
 
 def offer_page(request, token):
