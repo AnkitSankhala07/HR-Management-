@@ -202,6 +202,8 @@ SESSION_COOKIE_AGE = 60 * 60 * 8
 CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ---- Cache (used by throttling) ----
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
@@ -259,6 +261,12 @@ FASTAPI_PUBLIC_URL = env("FASTAPI_PUBLIC_URL", "http://localhost:8001")  # brows
 SERVICE_JWT_SECRET = env("SERVICE_JWT_SECRET", SECRET_KEY)
 SERVICE_JWT_TTL = timedelta(minutes=15)
 CORS_ALLOWED_ORIGINS = [o for o in env("CORS_ALLOWED_ORIGINS", "http://localhost:8000").split(",") if o]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.onrender\.com$",
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+]
 CORS_ALLOW_CREDENTIALS = True
 
 LOGGING = {
