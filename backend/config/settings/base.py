@@ -78,12 +78,8 @@ ASGI_APPLICATION = "config.asgi.application"
 TEMPLATES = [{
     "BACKEND": "django.template.backends.django.DjangoTemplates",
     "DIRS": [
-        BASE_DIR / "templates",
         FRONTEND_DIR / "templates",
-        REPO_ROOT / "templates",
-        Path("/var/task/backend/templates"),
-        Path("/var/task/frontend/templates"),
-        Path("/var/task/templates"),
+        BASE_DIR / "templates",
     ],
     "APP_DIRS": True,
     "OPTIONS": {"context_processors": [
@@ -103,30 +99,9 @@ if env("DATABASE_ENGINE", "").lower() in ("sqlite", "sqlite3") or env_bool("USE_
         import shutil
         import tempfile
         tmp_db = Path(tempfile.gettempdir()) / "db.sqlite3"
-        possible_sources = [
-            BASE_DIR / "db.sqlite3",
-            REPO_ROOT / "db.sqlite3",
-            Path("/var/task/backend/db.sqlite3"),
-            Path("/var/task/db.sqlite3"),
-            Path("./backend/db.sqlite3"),
-            Path("./db.sqlite3"),
-        ]
-        found_source = None
-        for p in possible_sources:
-            try:
-                if p.exists() and p.stat().st_size > 10000:
-                    found_source = p
-                    break
-            except Exception:
-                continue
-
-        if found_source:
-            try:
-                if not tmp_db.exists() or tmp_db.stat().st_size < 10000:
-                    shutil.copy2(found_source, tmp_db)
-            except Exception:
-                pass
-
+        bundled_db = BASE_DIR / "db.sqlite3"
+        if bundled_db.exists() and not tmp_db.exists():
+            shutil.copy2(bundled_db, tmp_db)
         sqlite_name = tmp_db
     else:
         sqlite_name = BASE_DIR / "db.sqlite3"

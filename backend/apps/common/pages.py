@@ -20,15 +20,7 @@ def error_404(request, exception=None):
 
 
 def error_500(request):
-    import sys, traceback
-    exc_type, exc_value, exc_traceback = sys.exc_info()
-    error_details = str(exc_value) if exc_value else ""
-    if error_details:
-        print(f"DJANGO 500 ERROR: {error_details}")
-        traceback.print_exc()
-    return render(request, "errors/500.html", {
-        "error_details": error_details,
-    }, status=500)
+    return render(request, "errors/500.html", status=500)
 
 
 def landing(request):
@@ -79,30 +71,14 @@ def team(request):
 
 
 def careers(request):
-    jobs = Job.objects.filter(status="OPEN").select_related("department").order_by("-published_at", "-id")
-    dept_names = sorted(list({j.department.name for j in jobs if j.department}))
-    locations = sorted(list({j.location for j in jobs if j.location}))
-    return render(request, "public/careers.html", {
-        "jobs": jobs,
-        "departments": dept_names,
-        "locations": locations,
-        "total_jobs": jobs.count(),
-        "title": "Careers · Join the Dayflow Team",
-    })
+    return render(request, "public/careers.html", {"jobs": Job.objects.filter(status="OPEN").select_related("department")})
 
 
 def career_detail(request, pk):
     job = Job.objects.filter(pk=pk, status="OPEN").select_related("department").first()
     if not job:
         raise Http404
-    skills_list = [s.strip() for s in job.skills_required.split(",") if s.strip()] if job.skills_required else []
-    related_jobs = Job.objects.filter(status="OPEN", department=job.department).exclude(pk=job.pk)[:3]
-    return render(request, "public/job.html", {
-        "job": job,
-        "skills_list": skills_list,
-        "related_jobs": related_jobs,
-        "title": f"{job.title} · Careers",
-    })
+    return render(request, "public/job.html", {"job": job})
 
 
 def offer_page(request, token):

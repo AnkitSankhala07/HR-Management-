@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block title %}Forgot password{% endblock %}
-{% block body %}{% include "auth/shell_top.html" %}
+{% block body %}{% include "auth/_shell_top.html" %}
 <h1>Reset your password</h1><p class="muted">We'll email you a secure link.</p>
 <div id="msg" class="badge b-green hide" style="display:block;white-space:normal;margin-bottom:12px"></div>
 <form id="f"><div class="field"><label for="email">Email</label><input id="email" type="email" required></div><button class="btn block lg">Send reset link</button></form>

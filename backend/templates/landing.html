@@ -1,6 +1,7 @@
 {% extends "base.html" %}{% block title %}Every workday, perfectly aligned{% endblock %}
 {% block body %}
-{% include "public/nav.html" %}
+<nav class="pub-nav"><a class="brand" href="/" style="padding:0"><i><span data-lucide="workflow"></span></i> Dayflow</a><span class="spacer"></span>
+<a href="#features">Features</a><a href="#how">How it works</a><a href="/careers/">Careers</a><a class="btn secondary sm" href="/login/">Sign in</a></nav>
 <section class="hero"><div>
 <span class="badge b-green">HR SaaS · Django · FastAPI · MySQL</span>
 <h1 style="margin-top:16px">DAYFLOW <span>HRMS</span></h1><h2 style="font-size:24px;margin:10px 0 14px;color:var(--green)">Every workday, perfectly aligned.</h2>
@@ -22,20 +23,5 @@
 <div class="card"><b>1 · Employee acts</b><p class="muted">Check in, apply for leave, update profile.</p></div><div class="card"><b>2 · Business logic</b><p class="muted">Validated by Django services inside transactions.</p></div>
 <div class="card"><b>3 · HR / manager acts</b><p class="muted">Approve, reject, update payroll.</p></div><div class="card"><b>4 · Everyone sees it</b><p class="muted">Persisted in MySQL, notified in real time.</p></div></div></section>
 <section class="section"><h2>Security & technology</h2><p class="muted">Server-side RBAC · Argon2 hashing · CSRF · rate limiting · audit logs · secure uploads · Django REST Framework · FastAPI · MySQL 8 · Docker.</p></section>
-<section class="section" style="background:#fff;border-radius:24px;border:1px solid var(--gray);box-shadow:var(--shadow);margin-bottom:30px">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap">
-    <div style="max-width:620px">
-      <span class="badge b-green">We're Hiring</span>
-      <h2 style="font-size:28px;margin:8px 0 6px">Join the team building Dayflow</h2>
-      <p class="muted" style="margin:0">We are expanding our Engineering, Product, HR, and Sales teams. Check out our open positions and remote perks.</p>
-    </div>
-    <div>
-      <a class="btn lg" href="/careers/">
-        <span data-lucide="sparkles"></span> Explore Open Roles
-      </a>
-    </div>
-  </div>
-</section>
-
 <footer class="pub">© Dayflow HRMS — a portfolio project.</footer>
 {% endblock %}

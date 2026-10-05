@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block title %}Verify email{% endblock %}
-{% block body %}{% include "auth/shell_top.html" %}
+{% block body %}{% include "auth/_shell_top.html" %}
 <h1>Verifying your email…</h1><div id="out" class="state"><div class="spinner"></div></div>
 <a class="btn block" href="/login/">Continue to sign in</a></div></div>{% endblock %}
 {% block scripts %}<script>fetch("/api/auth/csrf/").then(async()=>{const o=document.getElementById("out");
