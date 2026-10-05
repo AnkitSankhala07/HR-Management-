@@ -28,8 +28,8 @@ def env_bool(key: str, default: bool = False) -> bool:
 
 SECRET_KEY = env("SECRET_KEY", "dev-insecure-change-me")
 DEBUG = env_bool("DEBUG", False)
-ALLOWED_HOSTS = [h.strip() for h in env("ALLOWED_HOSTS", "localhost,127.0.0.1,.vercel.app").split(",") if h.strip()]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in env("CSRF_TRUSTED_ORIGINS", "https://*.vercel.app,http://localhost:8000,http://127.0.0.1:8000").split(",") if o.strip()]
+ALLOWED_HOSTS = [h.strip() for h in env("ALLOWED_HOSTS", "localhost,127.0.0.1,.vercel.app,.onrender.com").split(",") if h.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in env("CSRF_TRUSTED_ORIGINS", "https://*.vercel.app,https://*.onrender.com,http://localhost:8000,http://127.0.0.1:8000").split(",") if o.strip()]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -62,6 +62,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -151,6 +152,14 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [FRONTEND_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
