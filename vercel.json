@@ -1,13 +1,9 @@
 {
   "version": 2,
-  "routes": [
+  "rewrites": [
     {
-      "src": "/static/(.*)",
-      "dest": "/frontend/static/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "https://hr-management-ew2l.onrender.com/$1"
+      "source": "/:path*",
+      "destination": "https://hr-management-ew2l.onrender.com/:path*"
     }
   ]
 }
