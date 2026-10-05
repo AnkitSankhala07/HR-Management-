@@ -13,7 +13,11 @@
 const f=document.getElementById("f"),m=document.getElementById("msg");
 fetch("/api/auth/csrf/");
 f.onsubmit=async e=>{e.preventDefault();m.classList.add("hide");const b=document.getElementById("go");b.disabled=true;
- try{await DF.api("/api/auth/login/",{method:"POST",body:{email:f.email.value,password:f.password.value},silent:true});location.href="/dashboard/";}
+ try{
+  const res = await DF.api("/api/auth/login/",{method:"POST",body:{email:f.email.value,password:f.password.value},silent:true});
+  const next = new URLSearchParams(location.search).get("next");
+  location.href = (next && next.startsWith("/") && !next.startsWith("//")) ? next : (res.data?.redirect || "/dashboard/");
+ }
  catch(err){
   m.innerHTML = "";
   const txt = document.createElement("span");
