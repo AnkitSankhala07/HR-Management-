@@ -1,9 +1,30 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/:path*",
-      "destination": "https://hr-management-ew2l.onrender.com/:path*"
+      "src": "backend/config/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.12"
+      }
+    },
+    {
+      "src": "frontend/static/**",
+      "use": "@vercel/static"
     }
-  ]
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/frontend/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "backend/config/wsgi.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "backend:."
+  }
 }

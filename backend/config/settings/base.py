@@ -131,8 +131,13 @@ if env("DATABASE_ENGINE", "").lower() in ("sqlite", "sqlite3") or env_bool("USE_
         import tempfile
         tmp_db = Path(tempfile.gettempdir()) / "db.sqlite3"
         bundled_db = BASE_DIR / "db.sqlite3"
-        if bundled_db.exists() and not tmp_db.exists():
-            shutil.copy2(bundled_db, tmp_db)
+        if not bundled_db.exists():
+            bundled_db = REPO_ROOT / "db.sqlite3"
+        if bundled_db.exists() and (not tmp_db.exists() or tmp_db.stat().st_size == 0):
+            try:
+                shutil.copy2(bundled_db, tmp_db)
+            except Exception:
+                pass
         sqlite_name = tmp_db
     else:
         sqlite_name = BASE_DIR / "db.sqlite3"
