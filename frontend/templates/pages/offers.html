@@ -1,0 +1,11 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Offers</h1><p>Generate from the pipeline once a candidate reaches Interview</p></div></div>
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+DF.table(document.getElementById("t"),{url:"/api/offers/",search:false,empty:"No offers yet.",filters:[{name:"status",label:"Status",options:["DRAFT","SENT","ACCEPTED","REJECTED","EXPIRED"].map(s=>[s,s])}],
+ columns:[{label:"Candidate",render:r=>`<b>${DF.esc(r.candidate_name)}</b><div class="muted sm">${DF.esc(r.position)}</div>`},{label:"Salary",render:r=>DF.money(r.salary)},{label:"Joining",render:r=>DF.date(r.joining_date)},{label:"Expires",render:r=>DF.date(r.expiry_date)},{label:"Status",render:r=>DF.badge(r.status)}],
+ actions:r=>`<a class="btn secondary sm" href="/api/offers/${r.id}/pdf/">PDF</a>${r.status==="DRAFT"?` <button class="btn sm" data-act="send">Send</button>`:""}`,
+ onAction:async(a,r,reload)=>{await DF.api(`/api/offers/${r.id}/send/`,{method:"POST"});DF.toast("Offer sent","ok");reload()}});
+</script>{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Attendance</h1><p>{% if is_hr %}All employees{% elif role == "MANAGER" %}You and your team{% else %}Your attendance records{% endif %}</p></div>
+<a class="btn secondary" href="/api/reports/attendance/?export=csv"><span data-lucide="download"></span> Export CSV</a></div>
+<div class="tabs" id="views"><button data-v="daily">Daily</button><button data-v="weekly">Weekly</button><button class="active" data-v="monthly">Monthly</button></div>
+<div class="grid g4 keep2" id="sum" style="margin-bottom:18px"></div>
+<div class="card" id="t"></div>
+{% endblock %}
+{% block scripts %}<script>
+const ST=[["PRESENT","Present"],["ABSENT","Absent"],["HALF_DAY","Half Day"],["LEAVE","Leave"],["HOLIDAY","Holiday"],["WFH","Work From Home"]];
+let view="monthly";
+async function sum(){const d=(await DF.api("/api/attendance/summary/?view="+view)).data,c=d.counts||{};
+ document.getElementById("sum").innerHTML=[["Present",(c.PRESENT||0)+(c.WFH||0)],["Leave",c.LEAVE||0],["Hours worked",d.total_hours.toFixed(1)],["Overtime (h)",d.overtime_hours.toFixed(1)]].map(([l,v])=>`<div class="card stat"><div class="label">${l}</div><div class="value">${v}</div></div>`).join("")}
+const params=()=>{const n=new Date(),iso=x=>x.toISOString().slice(0,10);
+ if(view==="daily")return{date:iso(n)};const s=new Date(n);if(view==="weekly")s.setDate(n.getDate()-((n.getDay()+6)%7));else s.setDate(1);return{date_from:iso(s)}};
+let tbl;function mk(){document.getElementById("t").innerHTML="";tbl=DF.table(document.getElementById("t"),{url:"/api/attendance/",params:params(),ordering:"-attendance_date",empty:"No attendance records for this period.",
+ filters:[{name:"status",label:"Status",options:ST}{% if is_hr %},{name:"department",label:"Department",optionsUrl:"/api/departments/"}{% endif %}],
+ columns:[{% if is_hr or role == "MANAGER" %}{label:"Employee",render:r=>`<b>${DF.esc(r.employee_name)}</b><div class="muted sm">${DF.esc(r.employee_code)}</div>`},{% endif %}{label:"Date",sort:"attendance_date",render:r=>DF.date(r.attendance_date)},{label:"Check in",render:r=>r.check_in?new Date(r.check_in).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}):"-"},{label:"Check out",render:r=>r.check_out?new Date(r.check_out).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}):"-"},{label:"Hours",sort:"total_hours",key:"total_hours"},{label:"Overtime",key:"overtime_hours"},{label:"Status",render:r=>DF.badge(r.status)}]});sum()}
+document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#views button").forEach(x=>x.classList.remove("active"));b.classList.add("active");view=b.dataset.v;mk()});
+mk();</script>{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "dashboards/employee.html" %}
+{% block extra %}
+<div class="page-head" style="margin-top:32px"><div><h2 style="font-size:22px">My team</h2><p>Team overview</p></div><a class="btn secondary" href="/team/">Open team</a></div>
+<div class="grid g4 keep2">
+ <div class="card stat"><div class="label">Team size</div><div class="value">{{ m.team_size }}</div></div>
+ <div class="card stat"><div class="label">Present today</div><div class="value">{{ m.present }}</div></div>
+ <div class="card stat"><div class="label">On leave</div><div class="value">{{ m.on_leave|length }}</div></div>
+ <div class="card stat"><div class="label">Avg goal progress</div><div class="value">{{ m.goals_avg }}%</div></div></div>
+<div class="grid g2" style="margin-top:18px">
+ <div class="card"><div class="section-title"><h2>Pending approvals</h2><a href="/leave/">Review</a></div>
+  {% for l in m.pending %}<div class="list-item"><div class="grow"><b>{{ l.employee.full_name }}</b><div class="muted sm">{{ l.leave_type.name }} · {{ l.start_date }} → {{ l.end_date }}</div></div><a class="btn sm" href="/leave/">Review</a></div>{% empty %}<div class="state">No pending requests.</div>{% endfor %}</div>
+ <div class="card"><h2 style="margin-bottom:12px">Team goals</h2>
+  {% for g in m.goals %}<div style="margin-bottom:12px"><div class="row auto" style="justify-content:space-between"><b>{{ g.title }}</b><span class="muted sm">{{ g.owner.full_name }} · {{ g.progress }}%</span></div><div class="progress"><i style="width:{{ g.progress }}%"></i></div></div>{% empty %}<div class="state">No team goals.</div>{% endfor %}</div>
+ <div class="card"><h2 style="margin-bottom:12px">Team skills</h2>{% for s in m.skills %}<div class="list-item"><div class="grow">{{ s.skill__name }}</div><span class="badge b-green">{{ s.n }} people</span></div>{% empty %}<div class="state">No skills recorded.</div>{% endfor %}</div>
+ <div class="card"><h2 style="margin-bottom:12px">Recent recognition</h2>{% for r in m.recognitions %}<div class="list-item"><span class="badge b-green">{{ r.get_badge_display }}</span><div class="grow sm"><b>{{ r.receiver.full_name }}</b> — {{ r.message }}</div></div>{% empty %}<div class="state">None yet.</div>{% endfor %}</div>
+</div>
+{% endblock %}

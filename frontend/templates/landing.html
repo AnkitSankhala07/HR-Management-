@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% block title %}Every workday, perfectly aligned{% endblock %}
+{% block body %}
+<nav class="pub-nav"><a class="brand" href="/" style="padding:0"><i><span data-lucide="workflow"></span></i> Dayflow</a><span class="spacer"></span>
+<a href="#features">Features</a><a href="#how">How it works</a><a href="/careers/">Careers</a><a class="btn secondary sm" href="/login/">Sign in</a></nav>
+<section class="hero"><div>
+<span class="badge b-green">HR SaaS · Django · FastAPI · MySQL</span>
+<h1 style="margin-top:16px">DAYFLOW <span>HRMS</span></h1><h2 style="font-size:24px;margin:10px 0 14px;color:var(--green)">Every workday, perfectly aligned.</h2>
+<p>A modern workforce platform for managing people, attendance, leave, payroll, recruitment and employee growth.</p>
+<div class="row auto" style="margin-top:26px"><a class="btn lg" href="/register/">Get Started</a><a class="btn secondary lg" href="/login/">View Demo</a></div></div>
+<div class="hero-art"><div class="blob"></div>
+<div class="card" style="top:30px;left:10px"><div class="muted sm">TOTAL EMPLOYEES</div><div style="font-size:34px;font-weight:700">Live from MySQL</div></div>
+<div class="card" style="top:170px;right:0"><b>Leave approved</b><div class="progress" style="margin:10px 0"><i style="width:100%"></i></div><span class="muted sm">Employee notified instantly</span></div>
+<div class="card" style="bottom:10px;left:50px"><b>Ask HR Copilot</b><div class="muted sm">"How many employees are on leave today?"</div></div></div></section>
+<section class="section" id="features"><h2>Everything people-ops needs</h2><p class="muted">One connected workflow, from candidate to employee.</p>
+<div class="grid g3" style="margin-top:24px">
+<div class="card feat"><div class="ic"><span data-lucide="users"></span></div><h3>Employee management</h3><p class="muted">Profiles, departments, designations, managers and role-based access.</p></div>
+<div class="card feat"><div class="ic"><span data-lucide="clock"></span></div><h3>Attendance & timeline</h3><p class="muted">Server-timed check-in/out, breaks, overtime and a beautiful daily timeline.</p></div>
+<div class="card feat"><div class="ic"><span data-lucide="calendar-days"></span></div><h3>Leave workflow</h3><p class="muted">Balances, overlap detection, approvals and instant notifications.</p></div>
+<div class="card feat"><div class="ic"><span data-lucide="wallet"></span></div><h3>Payroll & salary slips</h3><p class="muted">Backend-calculated payroll with downloadable PDF salary slips.</p></div>
+<div class="card feat"><div class="ic"><span data-lucide="briefcase"></span></div><h3>Recruitment (ATS)</h3><p class="muted">Kanban pipeline, interviews, offers, then automatic onboarding.</p></div>
+<div class="card feat"><div class="ic"><span data-lucide="bot"></span></div><h3>AI HR Copilot</h3><p class="muted">Natural-language HR questions that always respect your permissions.</p></div></div></section>
+<section class="section" id="how"><h2>How it works</h2><div class="grid g4" style="margin-top:20px">
+<div class="card"><b>1 · Employee acts</b><p class="muted">Check in, apply for leave, update profile.</p></div><div class="card"><b>2 · Business logic</b><p class="muted">Validated by Django services inside transactions.</p></div>
+<div class="card"><b>3 · HR / manager acts</b><p class="muted">Approve, reject, update payroll.</p></div><div class="card"><b>4 · Everyone sees it</b><p class="muted">Persisted in MySQL, notified in real time.</p></div></div></section>
+<section class="section"><h2>Security & technology</h2><p class="muted">Server-side RBAC · Argon2 hashing · CSRF · rate limiting · audit logs · secure uploads · Django REST Framework · FastAPI · MySQL 8 · Docker.</p></section>
+<footer class="pub">© Dayflow HRMS — a portfolio project.</footer>
+{% endblock %}

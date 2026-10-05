@@ -1,0 +1,11 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Audit logs</h1><p>Traceability for sensitive operations</p></div></div>
+<div class="card"><div class="toolbar"><input id="u" placeholder="User email"><input id="e" placeholder="Entity (e.g. Payroll)"><input id="df" type="date" aria-label="From"><input id="dt" type="date" aria-label="To"></div><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const ACT=["LOGIN","LOGOUT","LOGIN_FAILED","EMPLOYEE_CREATED","EMPLOYEE_UPDATED","EMPLOYEE_DEACTIVATED","ROLE_CHANGED","LEAVE_CREATED","LEAVE_APPROVED","LEAVE_REJECTED","SALARY_CREATED","SALARY_UPDATED","PAYROLL_CREATED","DOCUMENT_UPLOADED","DOCUMENT_DELETED","JOB_CREATED","CANDIDATE_CREATED","CANDIDATE_STAGE_CHANGED","OFFER_CREATED"].map(a=>[a,a]);
+let t;const mk=()=>{const p={};["u:user","e:entity","df:date_from","dt:date_to"].forEach(x=>{const[i,k]=x.split(":");const v=document.getElementById(i).value;if(v)p[k]=v});
+ document.getElementById("t").innerHTML="";t=DF.table(document.getElementById("t"),{url:"/api/audit/",params:p,pageSize:15,search:false,empty:"No audit entries match.",filters:[{name:"action",label:"Action",options:ACT}],
+ columns:[{label:"Time",render:r=>DF.dt(r.timestamp)},{label:"User",render:r=>DF.esc(r.user_email||"system")},{label:"Action",render:r=>`<span class="badge b-green">${r.action}</span>`},{label:"Entity",render:r=>`${DF.esc(r.entity)} #${DF.esc(r.entity_id)}`},{label:"IP",key:"ip_address"},{label:"Details",render:r=>`<code class="sm">${DF.esc(JSON.stringify(r.new_value||r.old_value||"").slice(0,90))}</code>`}]})};
+["u","e","df","dt"].forEach(i=>document.getElementById(i).addEventListener("change",mk));mk();</script>{% endblock %}

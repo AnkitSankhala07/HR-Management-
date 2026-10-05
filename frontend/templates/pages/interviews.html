@@ -1,0 +1,11 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Interviews</h1><p>{% if is_recruit %}All scheduled interviews{% else %}Interviews you are assigned to{% endif %}</p></div></div>
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+DF.table(document.getElementById("t"),{url:"/api/interviews/",search:false,ordering:"scheduled_at",empty:"No interviews.",filters:[{name:"status",label:"Status",options:[["SCHEDULED","Scheduled"],["COMPLETED","Completed"],["CANCELLED","Cancelled"]]},{name:"interview_type",label:"Type",options:[["TECHNICAL","Technical"],["HR","HR"],["MANAGERIAL","Managerial"],["FINAL","Final"]]}],
+ columns:[{label:"Candidate",render:r=>`<b>${DF.esc(r.candidate_name)}</b><div class="muted sm">${DF.esc(r.job_title)}</div>`},{label:"Type",key:"interview_type"},{label:"When",render:r=>DF.dt(r.scheduled_at)},{label:"Interviewers",render:r=>DF.esc(r.interviewer_names.join(", "))},{label:"Link",render:r=>r.meeting_link?`<a href="${DF.esc(r.meeting_link)}" target="_blank" rel="noopener">Join</a>`:"-"},{label:"Feedback",render:r=>r.feedback.length?r.feedback.map(f=>`★${f.rating} ${DF.esc(f.recommendation)}`).join("<br>"):"-"},{label:"Status",render:r=>DF.badge(r.status)}],
+ actions:r=>`<button class="btn sm" data-act="fb">Add feedback</button>`,
+ onAction:(a,r,reload)=>DF.form({title:"Interview feedback — "+r.candidate_name,submit:"Submit",fields:[{name:"rating",label:"Rating (1-5)",type:"number",min:1,max:5,required:true},{name:"recommendation",label:"Recommendation",type:"select",options:[["YES","Hire"],["MAYBE","Maybe"],["NO","No hire"]],required:true},{name:"notes",label:"Notes",type:"textarea"}],onSubmit:async b=>{await DF.api(`/api/interviews/${r.id}/feedback/`,{method:"POST",body:b});DF.toast("Feedback saved","ok");reload()}})});
+</script>{% endblock %}

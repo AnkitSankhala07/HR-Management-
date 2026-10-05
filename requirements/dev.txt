@@ -1,0 +1,4 @@
+-r base.txt
+-r fastapi.txt
+pytest>=8.0
+pytest-django>=4.8

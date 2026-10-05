@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block title %}Create account{% endblock %}
+{% block body %}{% include "auth/_shell_top.html" %}
+<h1>Create your account</h1><p class="muted">Employee self-registration. Admin roles are assigned by HR.</p>
+<div id="msg" class="badge b-green hide" style="display:block;white-space:normal;margin-bottom:12px" role="alert"></div>
+<form id="f" novalidate>
+<div class="row"><div class="field"><label for="first_name">First name</label><input id="first_name" name="first_name" required></div><div class="field"><label for="last_name">Last name</label><input id="last_name" name="last_name" required></div></div>
+<div class="row"><div class="field"><label for="employee_id">Employee ID</label><input id="employee_id" name="employee_id" required placeholder="e.g. DF20260101"></div><div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel"></div></div>
+<div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required></div>
+<div class="field"><label for="password">Password</label><input id="password" name="password" type="password" required autocomplete="new-password"><div class="sm muted">8+ chars with upper & lower case, a digit and a symbol.</div></div>
+<div class="field"><label for="confirm_password">Confirm password</label><input id="confirm_password" name="confirm_password" type="password" required autocomplete="new-password"></div>
+<div class="field err" id="gen" style="color:var(--red)"></div>
+<button class="btn block lg" id="go">Create account</button></form>
+<p class="sm" style="margin-top:16px">Already registered? <a href="/login/">Sign in</a></p>
+</div></div>{% endblock %}
+{% block scripts %}<script>
+const f=document.getElementById("f");fetch("/api/auth/csrf/");
+f.onsubmit=async e=>{e.preventDefault();document.querySelectorAll(".err[data-e]").forEach(x=>x.remove());document.getElementById("gen").textContent="";
+ const body=Object.fromEntries(new FormData(f));const b=document.getElementById("go");b.disabled=true;
+ try{const d=await DF.api("/api/auth/register/",{method:"POST",body,silent:true});const m=document.getElementById("msg");m.textContent=d.message;m.classList.remove("hide");f.reset()}
+ catch(err){Object.entries(err.errors||{}).forEach(([k,v])=>{const el=f.elements[k];const t=[].concat(v).join(" ");
+   if(el)el.closest(".field").insertAdjacentHTML("beforeend",`<div class="err" data-e>${DF.esc(t)}</div>`);else document.getElementById("gen").textContent=t});
+   if(!Object.keys(err.errors||{}).length)document.getElementById("gen").textContent=err.message}
+ b.disabled=false};
+</script>{% endblock %}

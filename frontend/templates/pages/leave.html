@@ -1,0 +1,20 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Leave</h1><p>Apply for time off and track approvals</p></div><div class="row auto"><a class="btn secondary" href="/api/reports/leave/?export=csv"><span data-lucide="download"></span> CSV</a><button class="btn" id="apply"><span data-lucide="plus"></span> Apply for leave</button></div></div>
+<div class="grid g4 keep2" id="bal" style="margin-bottom:18px"></div>
+<div class="card"><h2 style="margin-bottom:12px">{% if is_approver %}Leave requests{% else %}My requests{% endif %}</h2><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const APPROVER={{ is_approver|yesno:"true,false" }};
+async function bal(){try{const d=(await DF.api("/api/leave-balances/")).data;document.getElementById("bal").innerHTML=d.filter(b=>b.allocated>0).map(b=>`<div class="card stat"><div class="label">${DF.esc(b.leave_type_name)}</div><div class="value">${parseFloat(b.remaining)}</div><div class="muted sm">${parseFloat(b.used)} used of ${parseFloat(b.allocated)}</div>${DF.bar(Math.round(100*b.used/b.allocated))}</div>`).join("")}catch(e){}}
+const t=DF.table(document.getElementById("t"),{url:"/api/leaves/",ordering:"-created_at",empty:"No leave requests yet.",
+ filters:[{name:"status",label:"Status",options:[["PENDING","Pending"],["APPROVED","Approved"],["REJECTED","Rejected"]]},{name:"leave_type",label:"Type",optionsUrl:"/api/leave-types/"}{% if is_hr %},{name:"department",label:"Department",optionsUrl:"/api/departments/"}{% endif %}],
+ columns:[{label:"Employee",render:r=>DF.esc(r.employee_name)},{label:"Type",render:r=>DF.esc(r.leave_type_name)},{label:"Dates",sort:"start_date",render:r=>`${DF.date(r.start_date)} → ${DF.date(r.end_date)}`},{label:"Days",key:"total_days"},{label:"Reason",render:r=>`<span class="sm">${DF.esc(r.reason)}</span>`},{label:"Status",render:r=>DF.badge(r.status)+(r.admin_comment?`<div class="muted sm">${DF.esc(r.admin_comment)}</div>`:"")}],
+ actions:r=>r.can_review?`<button class="btn sm" data-act="approve">Approve</button> <button class="btn danger sm" data-act="reject">Reject</button>`:(r.status==="PENDING"?`<button class="btn secondary sm" data-act="cancel">Cancel</button>`:""),
+ onAction:async(a,r,reload)=>{
+  if(a==="cancel"){if(!await DF.confirm("Cancel this request?","Cancel request"))return;await DF.api(`/api/leaves/${r.id}/cancel/`,{method:"POST"});reload();bal();return}
+  DF.form({title:(a==="approve"?"Approve":"Reject")+" leave",fields:[{name:"comment",label:"Comment"+(a==="reject"?" (required)":""),type:"textarea",required:a==="reject"}],submit:a==="approve"?"Approve":"Reject",
+   onSubmit:async b=>{await DF.api(`/api/leaves/${r.id}/${a}/`,{method:"PATCH",body:b});DF.toast("Leave "+a+"d","ok");reload();bal()}})}});
+document.getElementById("apply").onclick=()=>DF.form({title:"Apply for leave",submit:"Submit request",fields:[{name:"leave_type",label:"Leave type",type:"select",optionsUrl:"/api/leave-types/",required:true},{name:"start_date",label:"Start date",type:"date",required:true},{name:"end_date",label:"End date",type:"date",required:true},{name:"reason",label:"Reason",type:"textarea",required:true,max:500}],
+ onSubmit:async b=>{await DF.api("/api/leaves/",{method:"POST",body:b});DF.toast("Leave request submitted","ok");t.reload();bal()}});
+bal();</script>{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Document vault</h1><p>Secure employee documents</p></div><button class="btn" id="up"><span data-lucide="upload"></span> Upload document</button></div>
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const HR={{ is_hr|yesno:"true,false" }};
+const CAT=[["OFFER_LETTER","Offer Letter"],["JOINING_LETTER","Joining Letter"],["EXPERIENCE_LETTER","Experience Letter"],["SALARY_SLIP","Salary Slip"],["CERTIFICATE","Certificate"],["IDENTITY","Identity Document"],["OTHER","Other"]];
+const t=DF.table(document.getElementById("t"),{url:"/api/documents/",empty:"No documents uploaded.",filters:[{name:"category",label:"Category",options:CAT},{name:"status",label:"Status",options:[["PENDING","Pending"],["VERIFIED","Verified"],["REJECTED","Rejected"]]}],
+ columns:[{% if is_hr %}{label:"Employee",render:r=>DF.esc(r.employee_name)},{% endif %}{label:"Title",render:r=>`<b>${DF.esc(r.title)}</b><div class="muted sm">${DF.esc(r.original_name)} · ${(r.size/1024).toFixed(0)} KB</div>`},{label:"Category",render:r=>DF.esc(r.category.replace(/_/g," "))},{label:"Expiry",render:r=>DF.date(r.expiry_date)},{label:"Status",render:r=>DF.badge(r.effective_status)}],
+ actions:r=>`<a class="btn secondary sm" href="${r.download_url}?preview=1" target="_blank" rel="noopener">Preview</a> <a class="btn secondary sm" href="${r.download_url}">Download</a>${HR&&r.status==="PENDING"?` <button class="btn sm" data-act="verify">Verify</button> <button class="btn danger sm" data-act="reject">Reject</button>`:""} <button class="btn danger sm" data-act="del">Delete</button>`,
+ onAction:async(a,r,reload)=>{if(a==="del"){if(!await DF.confirm("Delete this document permanently?","Delete"))return;await DF.api("/api/documents/"+r.id+"/",{method:"DELETE"});DF.toast("Deleted","ok")}else{await DF.api(`/api/documents/${r.id}/${a}/`,{method:"POST"});DF.toast("Updated","ok")}reload()}});
+document.getElementById("up").onclick=()=>DF.form({title:"Upload document",submit:"Upload",fields:[{name:"title",label:"Title",required:true},{name:"category",label:"Category",type:"select",options:CAT,required:true},{name:"expiry_date",label:"Expiry date (optional)",type:"date"},{name:"file",label:"File (PDF, PNG, JPG · max 5 MB)",type:"file",accept:".pdf,.png,.jpg,.jpeg",required:true}],onSubmit:async b=>{await DF.api("/api/documents/",{method:"POST",body:b});DF.toast("Document uploaded","ok");t.reload()}});
+</script>{% endblock %}

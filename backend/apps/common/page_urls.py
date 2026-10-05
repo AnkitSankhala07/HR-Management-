@@ -1,0 +1,40 @@
+from django.urls import path
+
+from . import pages as p, roles as R
+
+S = p.simple
+urlpatterns = [
+    path("", p.landing, name="landing"),
+    path("login/", p.auth_page("auth/login.html")),
+    path("register/", p.auth_page("auth/register.html")),
+    path("forgot-password/", p.auth_page("auth/forgot.html")),
+    path("reset-password/<str:token>/", p.auth_page("auth/reset_password.html")),
+    path("verify-email/<str:token>/", p.auth_page("auth/verify.html")),
+    path("careers/", p.careers),
+    path("careers/<int:pk>/", p.career_detail),
+    path("offer/<uuid:token>/", p.offer_page),
+    path("dashboard/", p.dashboard),
+    path("profile/", S("pages/profile.html", "My Profile")),
+    path("team/", p.team),
+    path("employees/", S("pages/employees.html", "Employees", R.HR_ROLES)),
+    path("employees/<int:pk>/", p.employee_detail),
+    path("attendance/", S("pages/attendance.html", "Attendance")),
+    path("leave/", S("pages/leave.html", "Leave")),
+    path("payroll/", S("pages/payroll.html", "Payroll")),
+    path("documents/", S("pages/documents.html", "Documents")),
+    path("goals/", S("pages/goals.html", "Goals")),
+    path("skills/", S("pages/skills.html", "Skills")),
+    path("recognition/", S("pages/recognition.html", "Recognition")),
+    path("announcements/", S("pages/announcements.html", "Announcements")),
+    path("notifications/", S("pages/notifications.html", "Notifications")),
+    path("analytics/", S("pages/analytics.html", "Analytics", R.HR_ROLES + (R.MANAGER, R.RECRUITER))),
+    path("audit/", S("pages/audit.html", "Audit Logs", R.ADMIN_ROLES)),
+    path("recruitment/jobs/", S("pages/jobs.html", "Jobs", R.RECRUITMENT_ROLES)),
+    path("recruitment/pipeline/", S("pages/pipeline.html", "Hiring Pipeline", R.RECRUITMENT_ROLES)),
+    path("recruitment/candidates/", S("pages/candidates.html", "Candidates", R.RECRUITMENT_ROLES)),
+    path("recruitment/interviews/", S("pages/interviews.html", "Interviews")),
+    path("recruitment/offers/", S("pages/offers.html", "Offers", R.RECRUITMENT_ROLES)),
+    path("onboarding/", S("pages/onboarding.html", "Onboarding")),
+    path("copilot/", S("pages/copilot.html", "HR Copilot")),
+    path("reports/", S("pages/reports.html", "Reports")),
+]

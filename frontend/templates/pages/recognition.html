@@ -1,0 +1,12 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Recognition</h1><p>Celebrate great work</p></div><button class="btn" id="add"><span data-lucide="award"></span> Recognise someone</button></div>
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const CAT=["TEAMWORK","INNOVATION","LEADERSHIP","PROBLEM_SOLVING","CUSTOMER_FOCUS","LEARNING"].map(c=>[c,c.replace("_"," ").toLowerCase().replace(/^\w/,x=>x.toUpperCase())]);
+const BAD=[["PROBLEM_SOLVER","Problem Solver"],["TEAM_PLAYER","Team Player"],["INNOVATOR","Innovator"],["LEADER","Leader"],["FAST_LEARNER","Fast Learner"]];
+const t=DF.table(document.getElementById("t"),{url:"/api/recognition/",empty:"No recognition yet — be the first!",filters:[{name:"category",label:"Category",options:CAT},{name:"badge",label:"Badge",options:BAD}],
+ columns:[{label:"To",render:r=>`<b>${DF.esc(r.receiver_name)}</b>`},{label:"Badge",render:r=>`<span class="badge b-green">${DF.esc(r.badge_label)}</span>`},{label:"Message",render:r=>DF.esc(r.message)},{label:"From",render:r=>DF.esc(r.giver_name)},{label:"Date",render:r=>DF.date(r.created_at)}]});
+document.getElementById("add").onclick=()=>DF.form({title:"Recognise a colleague",submit:"Send",fields:[{name:"receiver",label:"Colleague",type:"select",optionsUrl:"/api/directory/",optionLabel:"full_name",required:true},{name:"category",label:"Category",type:"select",options:CAT,required:true},{name:"badge",label:"Badge",type:"select",options:BAD,required:true},{name:"message",label:"Message",type:"textarea",required:true,max:400}],onSubmit:async b=>{await DF.api("/api/recognition/",{method:"POST",body:b});DF.toast("Recognition sent","ok");t.reload()}});
+</script>{% endblock %}

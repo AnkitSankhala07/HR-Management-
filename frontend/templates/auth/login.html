@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% block title %}Sign in{% endblock %}
+{% block body %}{% include "auth/_shell_top.html" %}
+<h1>Welcome back</h1><p class="muted">Every workday, perfectly aligned.</p>
+<div id="msg" class="badge b-red hide" style="display:block;white-space:normal;margin-bottom:12px" role="alert"></div>
+<form id="f" novalidate>
+<div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="username"></div>
+<div class="field"><label for="password">Password</label><input id="password" name="password" type="password" required autocomplete="current-password"></div>
+<button class="btn block lg" id="go">Sign in</button></form>
+<p class="sm" style="margin-top:16px"><a href="/forgot-password/">Forgot password?</a> · <a href="/register/">Create an account</a></p>
+<p class="sm muted">Looking for a job? <a href="/careers/">View open roles</a></p>
+</div></div>{% endblock %}
+{% block scripts %}<script>
+const f=document.getElementById("f"),m=document.getElementById("msg");
+fetch("/api/auth/csrf/");
+f.onsubmit=async e=>{e.preventDefault();m.classList.add("hide");const b=document.getElementById("go");b.disabled=true;
+ try{await DF.api("/api/auth/login/",{method:"POST",body:{email:f.email.value,password:f.password.value},silent:true});location.href="/dashboard/";}
+ catch(err){
+  m.innerHTML = "";
+  const txt = document.createElement("span");
+  txt.textContent = err.message;
+  m.appendChild(txt);
+  if ((err.errors && err.errors.code === "email_not_verified") || (err.message && err.message.toLowerCase().includes("verify"))) {
+    const link = document.createElement("a");
+    link.href = "#";
+    link.textContent = "Resend verification email";
+    link.style.display = "block";
+    link.style.marginTop = "6px";
+    link.style.fontWeight = "600";
+    link.style.textDecoration = "underline";
+    link.onclick = async ev => {
+      ev.preventDefault();
+      try {
+        const res = await DF.api("/api/auth/resend-verification/", {method: "POST", body: {email: f.email.value}});
+        DF.toast(res.message || "If the account exists and is unverified, a new link has been sent.", "ok");
+      } catch(e) {
+        DF.toast(e.message || "Could not send verification email", "err");
+      }
+    };
+    m.appendChild(link);
+  }
+  m.classList.remove("hide");
+  b.disabled = false;
+ }};
+</script>{% endblock %}

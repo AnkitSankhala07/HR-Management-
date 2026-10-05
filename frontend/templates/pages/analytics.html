@@ -1,0 +1,23 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Workforce analytics</h1><p>Computed by the FastAPI analytics service directly from MySQL</p></div></div>
+<div id="err"></div>
+<div class="grid g4 keep2" id="cards" style="margin-bottom:18px"></div>
+<div class="grid g2" id="charts"></div>
+{% endblock %}
+{% block scripts %}<script>
+const ROLE="{{ role }}";
+const CH=[];let n=0;
+function box(title,type,labels,datasets,opts){const id="ch"+(n++);document.getElementById("charts").insertAdjacentHTML("beforeend",`<div class="card"><h2 style="margin-bottom:12px">${title}</h2><div class="chart-box"><canvas id="${id}" role="img" aria-label="${title}"></canvas></div></div>`);CH.push(()=>DF.chart(id,type,labels,datasets,opts))}
+const get=async p=>{try{return await DF.fastapi(p)}catch(e){if(e.status!==403)document.getElementById("err").innerHTML=`<div class="card" style="margin-bottom:14px">${DF.esc(e.message)}</div>`;return null}};
+(async()=>{
+ const [w,a,l,p,r,s]=await Promise.all(["workforce","attendance","leave","payroll","recruitment","skills"].map(k=>get("/analytics/"+k)));
+ if(w){document.getElementById("cards").innerHTML=Object.entries(w.cards).map(([k,v])=>`<div class="card stat"><div class="label">${k}</div><div class="value">${v}</div></div>`).join("");
+  box("Employee growth","line",w.growth.labels,[{label:"Employees",data:w.growth.data}]);box("Department distribution","doughnut",Object.keys(w.departments),[{data:Object.values(w.departments)}]);box("Employee tenure","bar",Object.keys(w.tenure),[{label:"Employees",data:Object.values(w.tenure)}])}
+ if(a){box("Attendance trend (present %)","line",a.trend.labels,[{label:"Present %",data:a.trend.data}]);box("Attendance split (30 days)","doughnut",Object.keys(a.split),[{data:Object.values(a.split)}])}
+ if(l){box("Leave trend","bar",l.trend.labels,[{label:"Days",data:l.trend.data}]);box("Leave type distribution","doughnut",Object.keys(l.types),[{data:Object.values(l.types)}])}
+ if(p){box("Payroll trend (net ₹)","bar",p.trend.labels,[{label:"Net payroll",data:p.trend.data}]);box("Department payroll","bar",Object.keys(p.by_department),[{label:"Net ₹",data:Object.values(p.by_department)}]);box("Salary distribution","bar",Object.keys(p.distribution),[{label:"Employees",data:Object.values(p.distribution)}])}
+ if(r){box("Hiring funnel","bar",r.funnel.labels,[{label:"Candidates",data:r.funnel.data}],{indexAxis:"y"})}
+ if(s){box("Skill distribution (top skills)","bar",Object.keys(s.top_skills),[{label:"People",data:Object.values(s.top_skills)}]);box("Skill gap: skills held by fewest people","bar",Object.keys(s.gaps),[{label:"People",data:Object.values(s.gaps)}])}
+ const w2=setInterval(()=>{if(!window.Chart)return;clearInterval(w2);CH.forEach(f=>f())},100);
+})();</script>{% endblock %}

@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Careers{% endblock %}
+{% block body %}{% include "public/_nav.html" %}
+<section class="section"><h1>Join Dayflow</h1><p class="muted">Open roles</p>
+<div class="grid g2" style="margin-top:20px">{% for j in jobs %}<a class="card" href="/careers/{{ j.id }}/" style="color:inherit;text-decoration:none"><h2>{{ j.title }}</h2><p class="muted">{{ j.department|default:"" }} · {{ j.location }} · {{ j.experience_min }}+ yrs</p><p>{{ j.description|truncatechars:140 }}</p><span class="badge b-green">{{ j.skills_required|default:"Open" }}</span></a>{% empty %}<div class="card state">No open positions right now. Check back soon!</div>{% endfor %}</div></section>{% endblock %}
