@@ -1,0 +1,14 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Jobs</h1><p>Create, publish and close openings · <a href="/careers/" target="_blank">public careers page</a></p></div><button class="btn" id="add"><span data-lucide="plus"></span> Create job</button></div>
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const F=[{name:"title",label:"Job title",required:true},{name:"department",label:"Department",type:"select",optionsUrl:"/api/departments/"},{name:"designation",label:"Designation",type:"select",optionsUrl:"/api/designations/",optionLabel:"title"},{name:"hiring_manager",label:"Hiring manager",type:"select",optionsUrl:"/api/directory/",optionLabel:"full_name"},{name:"description",label:"Description",type:"textarea",required:true,max:3000},{name:"skills_required",label:"Skills (comma separated)"},{name:"experience_min",label:"Min experience (years)",type:"number",min:0,value:0},{name:"location",label:"Location",value:"Ahmedabad"}];
+const t=DF.table(document.getElementById("t"),{url:"/api/jobs/",empty:"No jobs yet.",filters:[{name:"status",label:"Status",options:[["DRAFT","Draft"],["OPEN","Open"],["CLOSED","Closed"]]},{name:"department",label:"Department",optionsUrl:"/api/departments/"}],
+ columns:[{label:"Job",render:r=>`<b>${DF.esc(r.title)}</b><div class="muted sm">${DF.esc(r.department_name||"-")} · ${DF.esc(r.location)}</div>`},{label:"Skills",render:r=>DF.esc(r.skills_required||"-")},{label:"Applications",key:"applications_count"},{label:"Status",render:r=>DF.badge(r.status)}],
+ actions:r=>`${r.status!=="OPEN"?'<button class="btn sm" data-act="publish">Publish</button>':'<button class="btn secondary sm" data-act="close">Close</button>'} <button class="btn secondary sm" data-act="edit">Edit</button>`,
+ onAction:async(a,r,reload)=>{if(a==="edit")return DF.form({title:"Edit job",fields:F,initial:r,onSubmit:async b=>{await DF.api("/api/jobs/"+r.id+"/",{method:"PATCH",body:b});reload()}});
+  await DF.api(`/api/jobs/${r.id}/${a}/`,{method:"POST"});DF.toast("Job "+(a==="publish"?"published":"closed"),"ok");reload()}});
+document.getElementById("add").onclick=()=>DF.form({title:"Create job",fields:F,submit:"Create",onSubmit:async b=>{await DF.api("/api/jobs/",{method:"POST",body:b});DF.toast("Job created (draft) — publish it to accept applications","ok");t.reload()}});
+</script>{% endblock %}

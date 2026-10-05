@@ -1,0 +1,22 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>My profile</h1><p>Personal & job information</p></div><div class="row auto"><button class="btn secondary" id="pw">Change password</button><button class="btn" id="edit">Edit profile</button></div></div>
+<div id="root">{{ ""|default:"" }}<div class="state"><div class="spinner"></div></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const FIELDS=[{name:"phone",label:"Phone",type:"tel"},{name:"address",label:"Address"},{name:"city",label:"City"},{name:"state",label:"State"},{name:"date_of_birth",label:"Date of birth",type:"date"},{name:"profile_picture",label:"Profile photo (PNG/JPG, max 5MB)",type:"file",accept:"image/png,image/jpeg"}];
+let me;
+async function load(){const root=document.getElementById("root");
+ try{me=(await DF.api("/api/employees/me/")).data;
+  const [sk,rc,gl,docs]=await Promise.all(["/api/skills/?page_size=50&employee="+me.id,"/api/recognition/?page_size=10&receiver="+me.id,"/api/goals/?page_size=5","/api/documents/?page_size=5"].map(u=>DF.api(u,{silent:true}).catch(()=>({results:[]}))));
+  const row=(l,v)=>`<div class="list-item"><span class="muted grow">${l}</span><b>${DF.esc(v||"-")}</b></div>`;
+  root.innerHTML=`<div class="grid g-main"><div class="grid"><div class="card blob"><div class="row auto" style="gap:18px">${me.photo?`<img class="avatar lg" src="${me.photo}" alt="Profile photo">`:`<span class="avatar lg">${DF.esc(me.first_name[0]+me.last_name[0])}</span>`}<div><h2 style="font-size:24px">${DF.esc(me.full_name)}</h2><div class="muted">${DF.esc(me.designation_title||"-")} · ${DF.esc(me.department_name||"-")}</div>${DF.badge(me.is_active?"OPEN":"CLOSED").replace("Open","Active").replace("Closed","Inactive")}</div></div></div>
+  <div class="grid g2"><div class="card"><h3 style="margin-bottom:8px">Personal & contact</h3>${row("Email",me.email)}${row("Phone",me.phone)}${row("Address",[me.address,me.city,me.state].filter(Boolean).join(", "))}${row("Date of birth",me.date_of_birth&&DF.date(me.date_of_birth))}</div>
+  <div class="card"><h3 style="margin-bottom:8px">Job information</h3>${row("Employee ID",me.employee_id)}${row("Department",me.department_name)}${row("Manager",me.manager_name)}${row("Joined",DF.date(me.joining_date))}${row("Employment",me.employment_type.replace("_"," "))}</div></div>
+  <div class="card"><h3 style="margin-bottom:8px">Skills</h3>${(sk.results||[]).map(s=>`<span class="badge b-green" style="margin:3px">${DF.esc(s.skill_name)} · ${DF.esc(s.level_label)}</span>`).join("")||'<span class="muted">No skills yet — add some on the Skills page.</span>'}</div></div>
+  <div class="grid" style="align-content:start"><div class="card"><h3 style="margin-bottom:8px">Recognition</h3>${(rc.results||[]).map(r=>`<div class="list-item"><span class="badge b-green">${DF.esc(r.badge_label)}</span><div class="grow sm">${DF.esc(r.message)}<div class="muted">— ${DF.esc(r.giver_name)}</div></div></div>`).join("")||'<div class="muted">No recognition yet.</div>'}</div>
+  <div class="card"><h3 style="margin-bottom:8px">Documents</h3>${(docs.results||[]).map(d=>`<div class="list-item"><div class="grow">${DF.esc(d.title)}</div>${DF.badge(d.effective_status)}</div>`).join("")||'<div class="muted">No documents.</div>'}<a class="sm" href="/documents/">Manage documents</a></div></div></div>`;DF.icons()}
+ catch(e){root.innerHTML=DF.state("triangle-alert",DF.esc(e.message))}}
+document.getElementById("edit").onclick=()=>DF.form({title:"Edit profile",fields:FIELDS,initial:me,onSubmit:async b=>{await DF.api("/api/employees/me/",{method:"PATCH",body:b});DF.toast("Profile updated","ok");load()}});
+document.getElementById("pw").onclick=()=>DF.form({title:"Change password",fields:[{name:"current_password",label:"Current password",type:"password",required:true},{name:"password",label:"New password",type:"password",required:true},],submit:"Update",onSubmit:async b=>{await DF.api("/api/auth/change-password/",{method:"POST",body:b});DF.toast("Password changed","ok")}});
+load();</script>{% endblock %}

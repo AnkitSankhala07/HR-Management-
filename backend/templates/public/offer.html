@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Your offer{% endblock %}
+{% block body %}<div class="auth"><div class="card" style="max-width:520px"><a class="brand" href="/"><i><span data-lucide="workflow"></span></i> Dayflow</a><div id="o"><div class="state"><div class="spinner"></div></div></div></div></div>{% endblock %}
+{% block scripts %}<script>fetch("/api/auth/csrf/");const T="{{ token }}",o=document.getElementById("o");
+async function load(){try{const d=(await DF.api(`/api/offers/public/${T}/`,{silent:true})).data;
+ o.innerHTML=`<h1>Congratulations, ${DF.esc(d.candidate)}!</h1><p>We're pleased to offer you the role of <b>${DF.esc(d.position)}</b>${d.department?" in "+DF.esc(d.department):""}.</p>
+ <div class="list-item"><span class="muted grow">Annual salary</span><b>${DF.money(d.salary)}</b></div><div class="list-item"><span class="muted grow">Joining date</span><b>${DF.date(d.joining_date)}</b></div><div class="list-item"><span class="muted grow">Offer valid until</span><b>${DF.date(d.expiry_date)}</b></div>
+ ${d.status==="SENT"?`<div class="row auto" style="margin-top:20px"><button class="btn lg" id="a">Accept offer</button><button class="btn danger lg" id="r">Decline</button></div>`:`<p style="margin-top:20px">${DF.badge(d.status)} This offer can no longer be changed.</p>`}`;
+ const send=async x=>{try{const r=await DF.api(`/api/offers/public/${T}/`,{method:"POST",body:{decision:x}});DF.toast(r.message,"ok");load()}catch(e){}};
+ if(d.status==="SENT"){document.getElementById("a").onclick=()=>send("accept");document.getElementById("r").onclick=()=>send("reject")}}
+ catch(e){o.innerHTML=DF.state("triangle-alert",DF.esc(e.message))}}load();</script>{% endblock %}

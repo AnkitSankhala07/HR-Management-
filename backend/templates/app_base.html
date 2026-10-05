@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}{{ title|default:"Dashboard" }}{% endblock %}
+{% block body %}
+<div class="app">
+  <aside class="sidebar" aria-label="Main navigation">
+    <a class="brand" href="/dashboard/"><i><span data-lucide="workflow"></span></i> Dayflow</a>
+    <nav class="nav">{% for m in menu %}<a href="{{ m.url }}" data-nav="{{ m.url }}"><span data-lucide="{{ m.icon }}"></span> {{ m.label }}</a>{% endfor %}</nav>
+    <div class="spacer"></div>
+    <nav class="nav"><a href="/reports/" data-nav="/reports/"><span data-lucide="file-down"></span> Reports</a><a href="#" id="logout"><span data-lucide="log-out"></span> Log out</a></nav>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-toggle" aria-label="Open menu"><span data-lucide="menu"></span></button>
+      {% if me_role != "Employee" or True %}<div class="search"><span data-lucide="search"></span><input id="gsearch" type="search" placeholder="Search employees by ID, name, email..." aria-label="Global employee search" autocomplete="off"></div>{% endif %}
+      <div class="spacer"></div>
+      <a class="icon-btn" href="/notifications/" aria-label="Notifications"><span data-lucide="bell"></span>{% if unread_count %}<span class="dot" id="unread-dot">{{ unread_count }}</span>{% endif %}</a>
+      <a href="/profile/" class="row auto" style="gap:10px;color:inherit"><span class="avatar">{{ me_initials }}</span><span style="line-height:1.2"><b>{{ me_name }}</b><br><span class="muted sm">{{ me_role }}</span></span></a>
+    </header>
+    <main class="content" id="main">{% block content %}{% endblock %}</main>
+  </div>
+  <nav class="bottom-nav" aria-label="Quick navigation">
+    <a href="/dashboard/" data-nav="/dashboard/"><span data-lucide="layout-dashboard"></span>Home</a>
+    <a href="/attendance/" data-nav="/attendance/"><span data-lucide="clock"></span>Attendance</a>
+    <a href="/leave/" data-nav="/leave/"><span data-lucide="calendar-days"></span>Leave</a>
+    <a href="/payroll/" data-nav="/payroll/"><span data-lucide="wallet"></span>Payroll</a>
+    <a href="/notifications/" data-nav="/notifications/"><span data-lucide="bell"></span>Alerts</a>
+  </nav>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  document.querySelectorAll("[data-nav]").forEach(a=>{const u=a.dataset.nav;if(location.pathname===u||(u!=="/dashboard/"&&location.pathname.startsWith(u)))a.classList.add("active")});
+  const g=document.getElementById("gsearch");let t;
+  if(g)g.addEventListener("input",()=>{clearTimeout(t);t=setTimeout(async()=>{
+    document.getElementById("gres")?.remove();if(g.value.length<2)return;
+    try{const d=await DF.api("/api/employees/?page_size=6&search="+encodeURIComponent(g.value),{silent:true});
+    const box=document.createElement("div");box.id="gres";box.className="card";box.style.cssText="position:absolute;top:56px;left:0;right:0;z-index:50;padding:8px";
+    box.innerHTML=(d.results||[]).map(e=>`<a class="list-item" style="color:inherit" href="${'{{ me_role }}'.startsWith('HR')||'{{ me_role }}'=='Super Admin'?'/employees/'+e.id+'/':'#'}"><span class="avatar">${DF.esc(e.first_name[0]+e.last_name[0])}</span><span class="grow"><b>${DF.esc(e.full_name)}</b><br><span class="muted sm">${DF.esc(e.employee_id)} · ${DF.esc(e.department_name||"-")} · ${DF.esc(e.designation_title||"-")}</span></span></a>`).join("")||'<div class="state">No matches</div>';
+    g.parentElement.appendChild(box)}catch(e){}},300)});
+  document.addEventListener("click",e=>{if(!e.target.closest(".search"))document.getElementById("gres")?.remove()});
+});
+</script>
+{% endblock %}

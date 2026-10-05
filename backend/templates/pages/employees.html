@@ -1,0 +1,20 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Employees</h1><p>Search, filter and manage your workforce</p></div><div class="row auto"><a class="btn secondary" href="/api/reports/employee/?export=csv"><span data-lucide="download"></span> CSV</a><button class="btn" id="add"><span data-lucide="user-plus"></span> Add employee</button></div></div>
+<div class="card" id="t"></div>
+{% endblock %}
+{% block scripts %}<script>
+const ROLES=[["EMPLOYEE","Employee"],["MANAGER","Manager"],["RECRUITER","Recruiter"],["HR_MANAGER","HR Manager"]{% if role == "SUPER_ADMIN" %},["HR_ADMIN","HR Admin"],["SUPER_ADMIN","Super Admin"]{% endif %}];
+const F=(init)=>[{name:"first_name",label:"First name",required:true},{name:"last_name",label:"Last name",required:true},{name:"email",label:"Email",type:"email",required:true},{name:"employee_id",label:"Employee ID (blank = auto)"},{name:"phone",label:"Phone"},
+ {name:"role",label:"Role",type:"select",options:ROLES,value:"EMPLOYEE"},{name:"department",label:"Department",type:"select",optionsUrl:"/api/departments/"},{name:"designation",label:"Designation",type:"select",optionsUrl:"/api/designations/",optionLabel:"title"},
+ {name:"manager",label:"Manager",type:"select",optionsUrl:"/api/employees/?page_size=100",optionLabel:"full_name"},{name:"joining_date",label:"Joining date",type:"date"},{name:"employment_type",label:"Employment type",type:"select",options:[["FULL_TIME","Full time"],["PART_TIME","Part time"],["CONTRACT","Contract"],["INTERN","Intern"]],value:"FULL_TIME"},
+ {name:"date_of_birth",label:"Date of birth",type:"date"},{name:"profile_picture",label:"Profile photo",type:"file",accept:"image/png,image/jpeg"}];
+const t=DF.table(document.getElementById("t"),{url:"/api/employees/",ordering:"first_name",empty:"No employees match your filters.",
+ filters:[{name:"department",label:"Department",optionsUrl:"/api/departments/"},{name:"status",label:"Status",options:[["active","Active"],["inactive","Inactive"]]},{name:"employment_type",label:"Type",options:[["FULL_TIME","Full time"],["PART_TIME","Part time"],["CONTRACT","Contract"],["INTERN","Intern"]]}],
+ columns:[{label:"Employee",sort:"first_name",render:r=>`<div class="row auto"><span class="avatar">${DF.esc(r.first_name[0]+r.last_name[0])}</span><div><a href="/employees/${r.id}/"><b>${DF.esc(r.full_name)}</b></a><div class="muted sm">${DF.esc(r.email)}</div></div></div>`},
+  {label:"ID",key:"employee_id",sort:"employee_id"},{label:"Department",key:"department_name",sort:"department__name"},{label:"Designation",key:"designation_title"},{label:"Joined",sort:"joining_date",render:r=>DF.date(r.joining_date)},{label:"Status",render:r=>r.is_active?'<span class="badge b-green">Active</span>':'<span class="badge b-red">Inactive</span>'}],
+ actions:r=>`<a class="btn secondary sm" href="/employees/${r.id}/">View</a> ${r.is_active?`<button class="btn danger sm" data-act="off">Deactivate</button>`:`<button class="btn secondary sm" data-act="on">Activate</button>`}`,
+ onAction:async(a,r,reload)=>{if(a==="off"&&!await DF.confirm(`Deactivate ${r.full_name}? They will no longer be able to sign in.`,"Deactivate"))return;
+  await DF.api(`/api/employees/${r.id}/${a==="off"?"deactivate":"activate"}/`,{method:"POST"});DF.toast("Updated","ok");reload()}});
+document.getElementById("add").onclick=()=>DF.form({title:"Add employee",fields:F(),submit:"Create",onSubmit:async b=>{const d=await DF.api("/api/employees/",{method:"POST",body:b});DF.toast("Employee created"+(d.data.temp_password?" · temp password: "+d.data.temp_password:""),"ok");t.reload()}});
+</script>{% endblock %}

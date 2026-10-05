@@ -1,0 +1,11 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Notifications</h1><p>Your activity history</p></div><button class="btn secondary" id="all"><span data-lucide="check-check"></span> Mark all read</button></div>
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const t=DF.table(document.getElementById("t"),{url:"/api/notifications/",search:false,empty:"You're all caught up.",filters:[{name:"is_read",label:"Read",options:[["false","Unread"],["true","Read"]]}],
+ columns:[{label:"",render:r=>r.is_read?"":'<span class="badge b-green">New</span>'},{label:"Notification",render:r=>`<b>${DF.esc(r.title)}</b><div class="muted sm">${DF.esc(r.message)}</div>`},{label:"Type",render:r=>DF.esc(r.notification_type)},{label:"When",render:r=>DF.dt(r.created_at)}],
+ actions:r=>r.is_read?"":`<button class="btn secondary sm" data-act="read">Mark read</button>`,onAction:async(a,r,reload)=>{await DF.api("/api/notifications/"+r.id+"/mark-read/",{method:"POST"});reload();const d=document.getElementById("unread-dot");if(d){const n=+d.textContent-1;n>0?d.textContent=n:d.remove()}}});
+document.getElementById("all").onclick=async()=>{await DF.api("/api/notifications/mark-all-read/",{method:"POST"});DF.toast("All marked as read","ok");t.reload();document.getElementById("unread-dot")?.remove()};
+</script>{% endblock %}

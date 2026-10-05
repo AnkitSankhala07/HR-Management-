@@ -1,0 +1,19 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Recruitment</h1><p>Hiring overview</p></div><a class="btn" href="/recruitment/jobs/"><span data-lucide="plus"></span> New job</a></div>
+<div class="grid g6 keep2">{% for t,v,i in d.cards %}<div class="card stat"><div class="label"><span data-lucide="{{ i }}"></span>{{ t }}</div><div class="value">{{ v }}</div></div>{% endfor %}</div>
+<div class="grid g2" style="margin-top:18px">
+ <div class="card"><h2 style="margin-bottom:14px">Hiring funnel</h2><div class="chart-box"><canvas id="c-funnel" role="img" aria-label="Hiring funnel"></canvas></div></div>
+ <div class="card"><h2 style="margin-bottom:14px">Applications per job</h2><div class="chart-box"><canvas id="c-job" role="img" aria-label="Applications per job"></canvas></div></div>
+ <div class="card"><h2 style="margin-bottom:14px">Candidate source</h2><div class="chart-box"><canvas id="c-src" role="img" aria-label="Candidate source"></canvas></div></div>
+ <div class="card"><div class="section-title"><h2>Upcoming interviews</h2><a href="/recruitment/interviews/">All</a></div>
+  {% for i in d.upcoming %}<div class="list-item"><div class="grow"><b>{{ i.application.candidate.name }}</b><div class="muted sm">{{ i.application.job.title }} · {{ i.get_interview_type_display }}</div></div><span class="muted sm">{{ i.scheduled_at|date:"d M, H:i" }}</span></div>{% empty %}<div class="state">No interviews scheduled.</div>{% endfor %}</div>
+</div>
+{{ d.charts|json_script:"charts" }}
+{% endblock %}
+{% block scripts %}<script>
+document.addEventListener("DOMContentLoaded",()=>{const c=JSON.parse(document.getElementById("charts").textContent);
+ const w=setInterval(()=>{if(!window.Chart)return;clearInterval(w);
+ DF.chart("c-funnel","bar",c.funnel.labels,[{label:"Candidates",data:c.funnel.data}],{indexAxis:"y"});
+ DF.chart("c-job","bar",c.per_job.labels,[{label:"Applications",data:c.per_job.data}]);
+ DF.chart("c-src","doughnut",c.sources.labels,[{data:c.sources.data}]);},100)});</script>{% endblock %}

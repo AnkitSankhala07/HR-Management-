@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}500{% endblock %}
+{% block body %}<div class="auth"><div class="card" style="text-align:center;max-width:540px"><div style="font-size:64px;font-weight:700;color:var(--green)">500</div><h1>Something went wrong</h1><p class="muted">We've encountered an unexpected issue while loading this page.</p>
+{% if error_details %}<div class="field err" style="background:#fdecea;padding:12px;border-radius:10px;font-family:monospace;font-size:12px;text-align:left;word-break:break-all;margin:14px 0">{{ error_details }}</div>{% endif %}
+<p style="margin-top:20px;display:flex;gap:10px;justify-content:center"><a class="btn" href="/">Return Home</a> <a class="btn secondary" href="/careers/">Explore Careers</a></p></div></div>{% endblock %}

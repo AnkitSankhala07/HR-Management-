@@ -77,7 +77,14 @@ ASGI_APPLICATION = "config.asgi.application"
 
 TEMPLATES = [{
     "BACKEND": "django.template.backends.django.DjangoTemplates",
-    "DIRS": [FRONTEND_DIR / "templates"],
+    "DIRS": [
+        BASE_DIR / "templates",
+        FRONTEND_DIR / "templates",
+        REPO_ROOT / "templates",
+        Path("/var/task/backend/templates"),
+        Path("/var/task/frontend/templates"),
+        Path("/var/task/templates"),
+    ],
     "APP_DIRS": True,
     "OPTIONS": {"context_processors": [
         "django.template.context_processors.debug",

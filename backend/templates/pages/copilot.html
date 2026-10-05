@@ -1,0 +1,26 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>HR Copilot</h1><p>Ask questions in plain English. Answers come from MySQL and always respect your role.</p></div><div class="row auto"><button class="btn secondary" id="new"><span data-lucide="plus"></span> New conversation</button><button class="btn danger" id="clear">Clear</button></div></div>
+<div class="grid" style="grid-template-columns:260px 1fr;gap:18px">
+ <div class="card" style="padding:14px"><h3 style="margin-bottom:8px">History</h3><div id="hist" style="max-height:60vh;overflow:auto"></div></div>
+ <div class="card chat"><div class="msgs" id="msgs" aria-live="polite"></div>
+  <div class="chips" id="chips"></div>
+  <form id="f" class="row auto" style="flex-wrap:nowrap"><input id="q" placeholder="Ask HR Copilot…" aria-label="Your question" style="flex:1" autocomplete="off"><button class="btn" id="send"><span data-lucide="send"></span> Ask</button></form></div></div>
+{% endblock %}
+{% block scripts %}<script>
+let conv=null;const msgs=document.getElementById("msgs");
+const add=(role,text,denied)=>{msgs.insertAdjacentHTML("beforeend",`<div class="msg ${role}${denied?" denied":""}">${DF.esc(text)}</div>`);msgs.scrollTop=msgs.scrollHeight};
+async function hist(){try{const d=await DF.fastapi("/ai/conversations");document.getElementById("hist").innerHTML=d.map(c=>`<div class="list-item" style="cursor:pointer" data-c="${c.id}"><div class="grow sm"><b>${DF.esc(c.title)}</b></div><button class="icon-btn" style="width:30px;height:30px" aria-label="Delete conversation" data-d="${c.id}"><span data-lucide="trash-2"></span></button></div>`).join("")||'<div class="muted sm">No conversations yet.</div>';DF.icons()}
+ catch(e){document.getElementById("hist").innerHTML=`<div class="muted sm">${DF.esc(e.message)}</div>`}}
+async function open_(id){conv=id;msgs.innerHTML="";const d=await DF.fastapi("/ai/conversations/"+id);d.messages.forEach(m=>add(m.role,m.content))}
+document.getElementById("hist").addEventListener("click",async e=>{const d=e.target.closest("[data-d]");if(d){await DF.fastapi("/ai/conversations/"+d.dataset.d,{method:"DELETE"});if(conv==d.dataset.d){conv=null;msgs.innerHTML=""}hist();return}const c=e.target.closest("[data-c]");if(c)open_(c.dataset.c)});
+document.getElementById("new").onclick=()=>{conv=null;msgs.innerHTML="";add("assistant","New conversation started. What would you like to know?")};
+document.getElementById("clear").onclick=async()=>{if(conv&&await DF.confirm("Delete this conversation?","Clear")){await DF.fastapi("/ai/conversations/"+conv,{method:"DELETE"});conv=null;msgs.innerHTML="";hist()}else if(!conv)msgs.innerHTML=""};
+async function ask(q){add("user",q);document.getElementById("send").disabled=true;
+ try{const d=await DF.fastapi("/ai/chat",{method:"POST",body:JSON.stringify({message:q,conversation_id:conv})});conv=d.conversation_id;add("assistant",d.answer,d.refused);hist()}
+ catch(e){add("assistant",e.status===403?"🚫 Unauthorized (403): "+e.message:"⚠️ "+e.message,true)}
+ document.getElementById("send").disabled=false}
+document.getElementById("f").onsubmit=e=>{e.preventDefault();const q=document.getElementById("q").value.trim();if(!q)return;document.getElementById("q").value="";ask(q)};
+document.getElementById("chips").addEventListener("click",e=>{const c=e.target.closest(".chip");if(c)ask(c.textContent)});
+(async()=>{add("assistant","Hi! I'm your HR Copilot. I can explain data you're allowed to see — I never make hiring, firing, pay or promotion decisions.");
+ try{const d=await DF.fastapi("/ai/hr-assistant");document.getElementById("chips").innerHTML=d.suggestions.map(s=>`<button type="button" class="chip">${DF.esc(s)}</button>`).join("")}catch(e){}hist();DF.icons()})();</script>{% endblock %}

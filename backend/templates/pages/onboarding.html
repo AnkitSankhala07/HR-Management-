@@ -1,0 +1,12 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Onboarding</h1><p>Checklist progress for new hires</p></div></div>
+<div id="root"></div>
+{% endblock %}
+{% block scripts %}<script>
+const NEXT={PENDING:"IN_PROGRESS",IN_PROGRESS:"COMPLETED",COMPLETED:"PENDING"};
+async function load(){const r=document.getElementById("root");try{const d=await DF.api("/api/onboarding/?page_size=50");
+ r.innerHTML=d.results.map(o=>`<div class="card" style="margin-bottom:18px"><div class="section-title"><div><h2>${DF.esc(o.employee_name)}</h2><span class="muted sm">${DF.esc(o.employee_code)} · started ${DF.date(o.started_at)}</span></div><b>${o.progress}%</b></div>${DF.bar(o.progress)}
+ <div style="margin-top:12px">${o.tasks.map(t=>`<div class="list-item"><div class="grow">${DF.esc(t.title)}</div>${DF.badge(t.status)}<button class="btn secondary sm" data-t="${t.id}" data-s="${NEXT[t.status]}">→ ${NEXT[t.status].replace("_"," ").toLowerCase()}</button></div>`).join("")}</div></div>`).join("")||DF.state("clipboard-check","No onboarding in progress. Hiring a candidate creates one automatically.");DF.icons()}
+ catch(e){r.innerHTML=DF.state("triangle-alert",DF.esc(e.message))}}
+document.getElementById("root").addEventListener("click",async e=>{const b=e.target.closest("[data-t]");if(!b)return;await DF.api("/api/onboarding-tasks/"+b.dataset.t+"/",{method:"PATCH",body:{status:b.dataset.s}});load()});load();</script>{% endblock %}

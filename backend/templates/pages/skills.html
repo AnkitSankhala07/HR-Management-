@@ -1,0 +1,17 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Skill matrix</h1><p>Skills are informational — never an automated basis for hiring, pay or promotion decisions.</p></div><button class="btn" id="add"><span data-lucide="plus"></span> Add / update my skill</button></div>
+{% if is_approver %}<div class="grid g2" style="margin-bottom:18px"><div class="card"><h2 style="margin-bottom:10px">Skill distribution</h2><div class="chart-box"><canvas id="c-dist" role="img" aria-label="Skill level distribution"></canvas></div></div>
+<div class="card"><h2 style="margin-bottom:10px">Department skill matrix</h2><div id="matrix" style="max-height:290px;overflow:auto"></div></div></div>{% endif %}
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const LV=[[1,"Beginner"],[2,"Intermediate"],[3,"Advanced"],[4,"Expert"]];
+const t=DF.table(document.getElementById("t"),{url:"/api/skills/",empty:"No skills recorded yet.",filters:[{name:"level",label:"Level",options:LV}],
+ columns:[{% if is_approver %}{label:"Employee",render:r=>DF.esc(r.employee_name)},{% endif %}{label:"Skill",render:r=>`<b>${DF.esc(r.skill_name)}</b>`},{label:"Level",render:r=>`<span class="badge b-green">${DF.esc(r.level_label)}</span>`},{label:"Years",key:"years_experience"},{label:"Certification",render:r=>DF.esc(r.certification||"-")},{label:"Updated",render:r=>DF.date(r.last_updated)}],
+ actions:r=>`<button class="btn danger sm" data-act="del">Remove</button>`,onAction:async(a,r,reload)=>{try{await DF.api("/api/skills/"+r.id+"/",{method:"DELETE"});reload()}catch(e){}}});
+document.getElementById("add").onclick=()=>DF.form({title:"Add skill",submit:"Save",fields:[{name:"skill",label:"Existing skill",type:"select",optionsUrl:"/api/skill-catalog/"},{name:"new_skill",label:"…or new skill name"},{name:"level",label:"Level",type:"select",options:LV,required:true},{name:"years_experience",label:"Years of experience",type:"number",step:"0.5",min:0},{name:"certification",label:"Certification"}],onSubmit:async b=>{await DF.api("/api/skills/",{method:"POST",body:b});DF.toast("Skill saved","ok");t.reload();matrix()}});
+async function matrix(){const el=document.getElementById("matrix");if(!el)return;try{const d=(await DF.api("/api/skills/matrix/")).data;
+ el.innerHTML=Object.entries(d.matrix).map(([dep,sk])=>`<h3 style="margin:8px 0">${DF.esc(dep)}</h3>`+Object.entries(sk).map(([s,v])=>`<div class="list-item"><div class="grow">${DF.esc(s)}</div><span class="muted sm">${v.people} people · avg ${v.avg_level}/4</span><div style="width:80px">${DF.bar(v.avg_level*25)}</div></div>`).join("")).join("")||DF.state("inbox","No skills yet.");
+ const w=setInterval(()=>{if(!window.Chart)return;clearInterval(w);DF.chart("c-dist","doughnut",Object.keys(d.distribution),[{data:Object.values(d.distribution)}])},100)}catch(e){}}
+matrix();</script>{% endblock %}

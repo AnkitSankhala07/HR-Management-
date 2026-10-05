@@ -1,0 +1,13 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Reports</h1><p>View on screen or export CSV / PDF</p></div></div>
+<div class="card"><div class="toolbar"><select id="kind" aria-label="Report">
+<option value="attendance">Attendance</option><option value="leave">Leave</option>{% if is_payroll_admin %}<option value="payroll">Payroll</option>{% endif %}{% if is_hr %}<option value="employee">Employee</option><option value="department">Department</option>{% endif %}{% if is_recruit %}<option value="recruitment">Recruitment</option>{% endif %}{% if is_approver %}<option value="skill">Skill</option>{% endif %}</select>
+<a class="btn secondary" id="csv" href="#">CSV</a><a class="btn secondary" id="pdf" href="#">PDF</a></div><div id="out"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+async function run(){const k=document.getElementById("kind").value;const out=document.getElementById("out");out.innerHTML=DF.state("","",true);
+ document.getElementById("csv").href=`/api/reports/${k}/?export=csv`;document.getElementById("pdf").href=`/api/reports/${k}/?export=pdf`;
+ try{const d=(await DF.api(`/api/reports/${k}/`)).data;out.innerHTML=d.rows.length?`<div class="table-wrap"><table><thead><tr>${d.columns.map(c=>`<th>${DF.esc(c)}</th>`).join("")}</tr></thead><tbody>${d.rows.map(r=>`<tr>${r.map(c=>`<td>${DF.esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="muted sm">${d.total} rows</p>`:DF.state("inbox","No data for this report.")}
+ catch(e){out.innerHTML=DF.state("triangle-alert",e.status===403?"Unauthorized":DF.esc(e.message))}}
+document.getElementById("kind").onchange=run;run();</script>{% endblock %}

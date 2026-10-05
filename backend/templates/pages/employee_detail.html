@@ -1,0 +1,24 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1 id="nm">Employee</h1><p id="sub"></p></div><div class="row auto"><button class="btn secondary" id="edit">Edit</button></div></div>
+<div class="tabs" role="tablist"><button class="active" data-t="info">Overview</button><button data-t="att">Attendance</button><button data-t="leave">Leave</button>{% if is_payroll_admin %}<button data-t="pay">Payroll</button>{% endif %}<button data-t="docs">Documents</button><button data-t="goals">Goals</button><button data-t="skills">Skills</button></div>
+<div class="card" id="pane"></div>
+{% endblock %}
+{% block scripts %}<script>
+const ID={{ emp_id }};let emp;
+const rows=(a,cols)=>a.length?`<div class="table-wrap"><table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${a.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:DF.state("inbox","Nothing here yet.");
+const T={
+ info:async()=>{const r=(l,v)=>`<div class="list-item"><span class="muted grow">${l}</span><b>${DF.esc(v||"-")}</b></div>`;return `<div class="grid g2"><div>${r("Employee ID",emp.employee_id)}${r("Email",emp.email)}${r("Phone",emp.phone)}${r("Role",emp.role)}${r("Address",[emp.address,emp.city,emp.state].filter(Boolean).join(", "))}</div><div>${r("Department",emp.department_name)}${r("Designation",emp.designation_title)}${r("Manager",emp.manager_name)}${r("Joined",DF.date(emp.joining_date))}${r("Employment",emp.employment_type)}</div></div>`},
+ att:async()=>rows((await DF.api("/api/attendance/?page_size=15&employee="+ID)).results,[["Date",r=>DF.date(r.attendance_date)],["In",r=>DF.dt(r.check_in)],["Out",r=>DF.dt(r.check_out)],["Hours",r=>r.total_hours],["Status",r=>DF.badge(r.status)]]),
+ leave:async()=>rows((await DF.api("/api/leaves/?page_size=15&employee="+ID)).results,[["Type",r=>r.leave_type_name],["From",r=>DF.date(r.start_date)],["To",r=>DF.date(r.end_date)],["Days",r=>r.total_days],["Status",r=>DF.badge(r.status)]]),
+ pay:async()=>rows((await DF.api("/api/payroll/?page_size=12&employee="+ID)).results,[["Period",r=>r.pay_month+"/"+r.pay_year],["Gross",r=>DF.money(r.gross_salary)],["Deductions",r=>DF.money(r.deductions)],["Net",r=>DF.money(r.net_salary)],["Status",r=>DF.badge(r.payment_status)]]),
+ docs:async()=>rows((await DF.api("/api/documents/?page_size=15&employee="+ID)).results,[["Title",r=>DF.esc(r.title)],["Category",r=>r.category],["Status",r=>DF.badge(r.effective_status)],["",r=>`<a href="${r.download_url}">Download</a>`]]),
+ goals:async()=>rows((await DF.api("/api/goals/?page_size=15&owner="+ID)).results,[["Goal",r=>DF.esc(r.title)],["Due",r=>DF.date(r.due_date)],["Progress",r=>DF.bar(r.progress)],["Status",r=>DF.badge(r.status)]]),
+ skills:async()=>rows((await DF.api("/api/skills/?page_size=30&employee="+ID)).results,[["Skill",r=>DF.esc(r.skill_name)],["Level",r=>r.level_label],["Years",r=>r.years_experience],["Certification",r=>DF.esc(r.certification||"-")]]),
+};
+async function show(k){const p=document.getElementById("pane");p.innerHTML=DF.state("","",true);try{p.innerHTML=await T[k]();DF.icons()}catch(e){p.innerHTML=DF.state("triangle-alert",DF.esc(e.message))}}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");show(b.dataset.t)});
+document.getElementById("edit").onclick=()=>DF.form({title:"Edit employee",initial:emp,fields:[{name:"first_name",label:"First name"},{name:"last_name",label:"Last name"},{name:"phone",label:"Phone"},{name:"department",label:"Department",type:"select",optionsUrl:"/api/departments/"},{name:"designation",label:"Designation",type:"select",optionsUrl:"/api/designations/",optionLabel:"title"},{name:"manager",label:"Manager",type:"select",optionsUrl:"/api/employees/?page_size=100",optionLabel:"full_name"},{name:"employment_type",label:"Employment type",type:"select",options:[["FULL_TIME","Full time"],["PART_TIME","Part time"],["CONTRACT","Contract"],["INTERN","Intern"]]},{name:"role",label:"Role",type:"select",options:[["EMPLOYEE","Employee"],["MANAGER","Manager"],["RECRUITER","Recruiter"],["HR_MANAGER","HR Manager"],["HR_ADMIN","HR Admin"]],value:undefined}],onSubmit:async b=>{await DF.api("/api/employees/"+ID+"/",{method:"PATCH",body:b});DF.toast("Saved","ok");init()}});
+async function init(){try{const d0=await DF.api("/api/employees/"+ID+"/");emp=d0.data||d0;
+ document.getElementById("nm").textContent=emp.full_name;document.getElementById("sub").textContent=emp.employee_id+" · "+(emp.designation_title||"-")+" · "+(emp.department_name||"-");show("info")}catch(e){document.getElementById("pane").innerHTML=DF.state("triangle-alert",DF.esc(e.message))}}
+init();</script>{% endblock %}

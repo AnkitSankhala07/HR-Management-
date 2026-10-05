@@ -1,0 +1,28 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Hiring pipeline</h1><p>Move candidates forward through each stage</p></div><div class="row auto"><select id="job" aria-label="Filter by job" style="min-width:200px"><option value="">All jobs</option></select></div></div>
+<div class="kanban" id="board"></div>
+{% endblock %}
+{% block scripts %}<script>
+const STAGES=["APPLIED","SCREENING","SHORTLISTED","INTERVIEW","OFFER","HIRED","REJECTED"];const NEXT={APPLIED:"SCREENING",SCREENING:"SHORTLISTED",SHORTLISTED:"INTERVIEW"};
+async function load(){const j=document.getElementById("job").value;const b=document.getElementById("board");b.innerHTML=DF.state("","",true);
+ try{const d=(await DF.api("/api/applications/pipeline/"+(j?"?job="+j:""))).data;
+  b.innerHTML=STAGES.map(s=>`<div class="col"><h3>${s.charAt(0)+s.slice(1).toLowerCase()} <span class="badge">${d[s].length}</span></h3>${d[s].map(a=>`<div class="kcard"><b>${DF.esc(a.candidate_name)}</b><div class="muted sm">${DF.esc(a.job_title)} · ${a.experience} yrs exp</div>
+   ${a.next_interview?`<div class="sm">🗓 ${DF.dt(a.next_interview)}</div>`:""}${a.offer_status?`<div class="sm">Offer: ${DF.badge(a.offer_status)}</div>`:""}
+   <div class="btns">${a.resume_url?`<a class="btn secondary sm" href="${a.resume_url}" target="_blank">Resume</a>`:""}
+   ${NEXT[s]?`<button class="btn sm" data-id="${a.id}" data-go="${NEXT[s]}">→ ${NEXT[s].toLowerCase()}</button>`:""}
+   ${s==="SHORTLISTED"||s==="INTERVIEW"?`<button class="btn secondary sm" data-iv="${a.id}">Schedule interview</button>`:""}
+   ${s==="INTERVIEW"&&!a.offer_status?`<button class="btn sm" data-offer="${a.id}" data-name="${DF.esc(a.candidate_name)}">Generate offer</button>`:""}
+   ${s==="OFFER"&&a.offer_status==="ACCEPTED"?`<button class="btn sm" data-hire="${a.id}">Mark hired</button>`:""}
+   ${!["HIRED","REJECTED"].includes(s)?`<button class="btn danger sm" data-rej="${a.id}">Reject</button>`:""}</div></div>`).join("")||'<div class="muted sm" style="padding:8px">Empty</div>'}</div>`).join("");DF.icons()}
+ catch(e){b.innerHTML=DF.state("triangle-alert",DF.esc(e.message))}}
+document.getElementById("board").addEventListener("click",async e=>{const t=e.target.closest("button");if(!t)return;const d=t.dataset;
+ try{if(d.go){await DF.api(`/api/applications/${d.id}/stage/`,{method:"PATCH",body:{stage:d.go}});load()}
+ else if(d.rej){if(await DF.confirm("Reject this candidate?","Reject")){await DF.api(`/api/applications/${d.rej}/stage/`,{method:"PATCH",body:{stage:"REJECTED"}});load()}}
+ else if(d.hire){const r=await DF.api(`/api/applications/${d.hire}/hire/`,{method:"POST"});DF.toast("Hired · "+r.data.employee_id+(r.data.temp_password?" · temp pw: "+r.data.temp_password:""),"ok");load()}
+ else if(d.iv)DF.form({title:"Schedule interview",submit:"Schedule",fields:[{name:"interview_type",label:"Type",type:"select",options:[["TECHNICAL","Technical"],["HR","HR"],["MANAGERIAL","Managerial"],["FINAL","Final"]],required:true},{name:"scheduled_at",label:"Date & time",type:"datetime-local",required:true},{name:"interviewers",label:"Interviewers (Ctrl/Cmd+click)",type:"multiselect",optionsUrl:"/api/directory/",optionLabel:"full_name",required:true},{name:"meeting_link",label:"Meeting link",type:"url"}],
+  onSubmit:async b=>{b.scheduled_at=new Date(b.scheduled_at).toISOString();b.application=+d.iv;await DF.api("/api/interviews/",{method:"POST",body:b});DF.toast("Interview scheduled","ok");load()}});
+ else if(d.offer)DF.form({title:"Offer for "+d.name,submit:"Generate & send",fields:[{name:"salary",label:"Annual salary (₹)",type:"number",required:true,min:0},{name:"joining_date",label:"Joining date",type:"date",required:true},{name:"expiry_date",label:"Offer expiry",type:"date",required:true}],
+  onSubmit:async b=>{b.application=+d.offer;b.send=true;await DF.api("/api/offers/",{method:"POST",body:b});DF.toast("Offer generated and sent","ok");load()}})}catch(err){}});
+(async()=>{const j=await DF.api("/api/jobs/?page_size=100",{silent:true}).catch(()=>({results:[]}));document.getElementById("job").insertAdjacentHTML("beforeend",(j.results||[]).map(x=>`<option value="${x.id}">${DF.esc(x.title)}</option>`).join(""));document.getElementById("job").onchange=load;load()})();
+</script>{% endblock %}

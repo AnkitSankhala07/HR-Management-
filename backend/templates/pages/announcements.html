@@ -1,0 +1,12 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Announcements</h1><p>Company and department news</p></div>{% if is_hr %}<button class="btn" id="add"><span data-lucide="megaphone"></span> New announcement</button>{% endif %}</div>
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const HR={{ is_hr|yesno:"true,false" }};
+const t=DF.table(document.getElementById("t"),{url:"/api/announcements/",params:HR?{all:1}:{},empty:"No active announcements.",filters:[{name:"priority",label:"Priority",options:[["NORMAL","Normal"],["IMPORTANT","Important"],["URGENT","Urgent"]]}],
+ columns:[{label:"Announcement",render:r=>`<b>${DF.esc(r.title)}</b><div class="muted sm">${DF.esc(r.description)}</div>`},{label:"Audience",render:r=>DF.esc(r.audience==="COMPANY"?"Company":(r.department_name||"Department"))},{label:"Priority",render:r=>DF.badge(r.priority)},{label:"Published",render:r=>DF.date(r.published_at)},{label:"Expires",render:r=>DF.date(r.expires_at)}],
+ actions:HR?r=>`<button class="btn danger sm" data-act="del">Delete</button>`:null,onAction:async(a,r,reload)=>{if(!await DF.confirm("Delete this announcement?","Delete"))return;await DF.api("/api/announcements/"+r.id+"/",{method:"DELETE"});reload()}});
+if(HR)document.getElementById("add").onclick=()=>DF.form({title:"New announcement",submit:"Publish",fields:[{name:"title",label:"Title",required:true},{name:"description",label:"Description",type:"textarea",required:true,max:2000},{name:"audience",label:"Audience",type:"select",options:[["COMPANY","Company"],["DEPARTMENT","Department"]],value:"COMPANY"},{name:"department",label:"Department (if audience = department)",type:"select",optionsUrl:"/api/departments/"},{name:"priority",label:"Priority",type:"select",options:[["NORMAL","Normal"],["IMPORTANT","Important"],["URGENT","Urgent"]],value:"NORMAL"},{name:"expires_at",label:"Expiry (optional)",type:"datetime-local"}],onSubmit:async b=>{if(b.expires_at)b.expires_at=new Date(b.expires_at).toISOString();await DF.api("/api/announcements/",{method:"POST",body:b});DF.toast("Published","ok");t.reload()}});
+</script>{% endblock %}

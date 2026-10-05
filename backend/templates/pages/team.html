@@ -1,0 +1,12 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>My team</h1><p>Direct reports — attendance, leave, goals and skills</p></div></div>
+<div class="card"><div id="t"></div></div>
+<div class="grid g2" style="margin-top:18px"><div class="card"><h2 style="margin-bottom:12px">Team attendance (today)</h2><div id="att"></div></div><div class="card"><h2 style="margin-bottom:12px">Team goals</h2><div id="goals"></div></div></div>
+{% endblock %}
+{% block scripts %}<script>
+DF.table(document.getElementById("t"),{url:"/api/employees/team/",empty:"You have no direct reports yet.",columns:[{label:"Name",render:r=>`<div class="row auto"><span class="avatar">${DF.esc(r.first_name[0]+r.last_name[0])}</span><b>${DF.esc(r.full_name)}</b></div>`},{label:"ID",key:"employee_id"},{label:"Designation",key:"designation_title"},{label:"Email",key:"email"}]});
+(async()=>{const today=new Date().toISOString().slice(0,10);
+ try{const a=await DF.api("/api/attendance/?page_size=50&date="+today);document.getElementById("att").innerHTML=a.results.map(r=>`<div class="list-item"><div class="grow">${DF.esc(r.employee_name)}</div>${DF.badge(r.status)}</div>`).join("")||DF.state("inbox","No attendance recorded yet today.")}catch(e){}
+ try{const g=await DF.api("/api/goals/?page_size=20");document.getElementById("goals").innerHTML=g.results.map(r=>`<div style="margin-bottom:12px"><div class="row auto" style="justify-content:space-between"><b>${DF.esc(r.title)}</b><span class="muted sm">${DF.esc(r.owner_name)} · ${r.progress}%</span></div>${DF.bar(r.progress)}</div>`).join("")||DF.state("inbox","No goals.")}catch(e){}
+ DF.icons()})();</script>{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "app_base.html" %}
+{% block content %}
+<div class="page-head"><div><h1>Goals & OKRs</h1><p>Track progress against objectives</p></div><button class="btn" id="add"><span data-lucide="plus"></span> New goal</button></div>
+<div class="card"><div id="t"></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const MGR={{ is_approver|yesno:"true,false" }};
+const P=[["LOW","Low"],["MEDIUM","Medium"],["HIGH","High"]];
+const F=(n)=>[...(MGR&&!n?[{name:"owner",label:"Owner (blank = me)",type:"select",optionsUrl:"/api/employees/?page_size=100",optionLabel:"full_name"}]:[]),{name:"title",label:"Goal title",required:true},{name:"description",label:"Description",type:"textarea"},{name:"start_date",label:"Start date",type:"date"},{name:"due_date",label:"Due date",type:"date",required:true},{name:"priority",label:"Priority",type:"select",options:P,value:"MEDIUM"},{name:"progress",label:"Progress (0-100)",type:"number",min:0,max:100,value:0}];
+const t=DF.table(document.getElementById("t"),{url:"/api/goals/",ordering:"due_date",empty:"No goals yet — create your first one.",filters:[{name:"status",label:"Status",options:[["NOT_STARTED","Not started"],["IN_PROGRESS","In progress"],["COMPLETED","Completed"],["OVERDUE","Overdue"]]},{name:"priority",label:"Priority",options:P}],
+ columns:[{label:"Goal",render:r=>`<b>${DF.esc(r.title)}</b><div class="muted sm">${DF.esc(r.owner_name)}</div>`},{label:"Due",sort:"due_date",render:r=>DF.date(r.due_date)},{label:"Priority",render:r=>DF.badge(r.priority)},{label:"Progress",sort:"progress",render:r=>`<div style="min-width:130px">${DF.bar(r.progress)}<span class="muted sm">${r.progress}%</span></div>`},{label:"Status",render:r=>DF.badge(r.status)}],
+ actions:r=>`<button class="btn secondary sm" data-act="edit">Update</button> <button class="btn danger sm" data-act="del">Delete</button>`,
+ onAction:async(a,r,reload)=>{if(a==="del"){if(!await DF.confirm("Delete this goal?","Delete"))return;await DF.api("/api/goals/"+r.id+"/",{method:"DELETE"});reload();return}
+  DF.form({title:"Update goal",fields:F(true),initial:r,onSubmit:async b=>{await DF.api("/api/goals/"+r.id+"/",{method:"PATCH",body:b});DF.toast("Goal updated","ok");reload()}})}});
+document.getElementById("add").onclick=()=>DF.form({title:"New goal",fields:F(false),submit:"Create",onSubmit:async b=>{await DF.api("/api/goals/",{method:"POST",body:b});DF.toast("Goal created","ok");t.reload()}});
+</script>{% endblock %}
