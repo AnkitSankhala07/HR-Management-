@@ -1,12 +1,19 @@
 """Base settings for Dayflow HRMS (shared by all environments)."""
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 REPO_ROOT = BASE_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 FRONTEND_DIR = REPO_ROOT / "frontend"
 load_dotenv(REPO_ROOT / ".env")
 
