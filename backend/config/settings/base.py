@@ -21,7 +21,8 @@ def env_bool(key: str, default: bool = False) -> bool:
 
 SECRET_KEY = env("SECRET_KEY", "dev-insecure-change-me")
 DEBUG = env_bool("DEBUG", False)
-ALLOWED_HOSTS = [h.strip() for h in env("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+ALLOWED_HOSTS = [h.strip() for h in env("ALLOWED_HOSTS", "localhost,127.0.0.1,.vercel.app").split(",") if h.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in env("CSRF_TRUSTED_ORIGINS", "https://*.vercel.app,http://localhost:8000,http://127.0.0.1:8000").split(",") if o.strip()]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
