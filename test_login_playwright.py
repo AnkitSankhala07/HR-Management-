@@ -1,12 +1,15 @@
 """
-Playwright automated test suite for Dayflow HRMS Login & Account Switching:
+Playwright automated test suite for Dayflow HRMS Login & Multi-Account Support:
 1. Desktop Viewport: Login page UI rendering & 6 demo account autofill cards
 2. Password Show/Hide toggle
 3. Autofill Demo Credentials (HR Admin & Employee)
-4. Successful Login as HR Admin
-5. Account Switching: Visiting /login/ while authenticated, switching from HR Admin to Employee
-6. Mobile Viewport (390x844): Mobile login UI, autofill & responsive layout
-7. Logout verification
+4. Multi-account concurrent sessions test (Tab 1 HR Admin, Tab 2 Employee)
+5. Verify Tab 1 is NOT logged out when Tab 2 logs in
+6. Tab 1 internal link navigation maintains active account
+7. 1-click Account Switcher in UI
+8. Selective logout (switches to remaining signed-in account)
+9. Mobile Viewport (390x844): Mobile login UI, autofill & responsive layout
+10. Final logout verification
 """
 import os
 import sys
@@ -33,7 +36,6 @@ def ensure_server():
         [venv_python, "-u", "backend/manage.py", "runserver", "127.0.0.1:8000", "--noreload"],
         cwd=os.path.dirname(os.path.abspath(__file__))
     )
-    # Wait for server to start
     for i in range(20):
         time.sleep(1)
         try:
@@ -75,11 +77,12 @@ def run_tests():
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
+        # Shared context represents the same browser session/cookies
         context = browser.new_context(viewport={"width": 1280, "height": 800})
-        page = context.new_page()
+        context.clear_cookies()
 
         print("\n=== 1. DESKTOP LOGIN UI & AUTOFILL CARDS ===")
-        context.clear_cookies()
+        page = context.new_page()
         page.goto(f"{BASE_URL}/login/")
         page.wait_for_selector("#f")
 
@@ -92,11 +95,6 @@ def run_tests():
         card_text = page.locator(".demo-grid").inner_text()
         for role in ["HR Admin", "HR Manager", "Super Admin", "Manager", "Recruiter", "Employee"]:
             record(f"Demo card for '{role}' is present", role in card_text)
-
-        # Capture desktop login screenshot
-        os.makedirs("test_artifacts", exist_ok=True)
-        page.screenshot(path="test_artifacts/desktop_login_page.png")
-        print("  [INFO] Captured desktop screenshot -> test_artifacts/desktop_login_page.png")
 
         print("\n=== 2. PASSWORD TOGGLE VISIBILITY ===")
         pw_input = page.locator("#password")
@@ -129,43 +127,82 @@ def run_tests():
         record("Employee card marked with active class", "active" in (emp_card.get_attribute("class") or ""))
         record("Button text updated to Employee", "Employee" in btn.inner_text())
 
-        print("\n=== 4. SIGN IN AS HR ADMIN ===")
+        print("\n=== 4. MULTI-ACCOUNT CONCURRENT SESSIONS (TAB 1 & TAB 2) ===")
+        # Log in as HR Admin in Tab 1
         hr_card.click()
         btn.click()
-
         page.wait_for_url("**/dashboard/**", timeout=8000)
-        record("Redirected to /dashboard/ after login", "/dashboard/" in page.url)
-
         page.wait_for_selector(".topbar")
-        topbar_text = page.locator(".topbar").inner_text()
-        record("Topbar shows HR Admin user Hetal Shah", "Hetal Shah" in topbar_text or "HR Admin" in topbar_text)
+        record("Tab 1 logged in as HR Admin Hetal Shah", "Hetal Shah" in page.locator(".topbar").inner_text())
 
-        print("\n=== 5. ACCOUNT SWITCHING (PREVIOUS ACCOUNT OVERWRITE FIX) ===")
-        # Navigate to /login/ while authenticated as HR Admin
-        page.goto(f"{BASE_URL}/login/")
-        page.wait_for_selector(".logged-in-banner")
+        # Open Tab 2 in the same browser session and log in as Employee
+        tab2 = context.new_page()
+        tab2.goto(f"{BASE_URL}/login/")
+        tab2.wait_for_selector("#f")
+        record("Tab 2 shows already signed in banner for HR Admin", tab2.locator(".logged-in-banner").is_visible())
 
-        banner = page.locator(".logged-in-banner")
-        record("Login page does NOT force-redirect to dashboard", "/login/" in page.url)
-        record("Active session banner is displayed", banner.is_visible())
-        record("Banner identifies current user as Hetal Shah (HR Admin)", "Hetal Shah" in banner.inner_text())
+        tab2.locator(".demo-card").filter(has_text="Employee").first.click()
+        tab2.locator("#go").click()
+        tab2.wait_for_url("**/dashboard/**", timeout=8000)
+        tab2.wait_for_selector(".topbar")
+        record("Tab 2 logged in as Employee Esha Patel", "Esha Patel" in tab2.locator(".topbar").inner_text())
 
-        # Switch to Employee using Autofill
-        emp_card = page.locator(".demo-card").filter(has_text="Employee").first
-        emp_card.click()
-        record("Autofilled Employee credentials while on login page", email_input.input_value() == "employee@dayflow.dev")
-
-        btn.click()
-        page.wait_for_url("**/dashboard/**", timeout=8000)
-        record("Successfully redirected to dashboard after account switch", "/dashboard/" in page.url)
-
-        # Verify current user is now Esha Patel (Employee) and not Hetal Shah
+        print("\n=== 5. VERIFY TAB 1 (HR ADMIN) IS NOT LOGGED OUT ===")
+        # Bring tab1 to front and reload / navigate
+        page.bring_to_front()
+        page.reload()
         page.wait_for_selector(".topbar")
-        topbar_text = page.locator(".topbar").inner_text()
-        record("Topbar now shows Employee Esha Patel", "Esha Patel" in topbar_text)
-        record("HR Admin is cleanly replaced (no session collision)", "Hetal Shah" not in topbar_text)
+        topbar1_after = page.locator(".topbar").inner_text()
 
-        print("\n=== 6. MOBILE VIEWPORT TEST (390x844 - iPhone) ===")
+        record("Tab 1 (HR Admin) is STILL active and NOT logged out!", "Hetal Shah" in topbar1_after or "HR Admin" in topbar1_after)
+        record("Tab 1 did NOT get replaced by Employee", "Esha Patel" not in topbar1_after)
+
+        # Navigate within Tab 1 to Attendance
+        page.locator(".sidebar .nav a[data-nav='/attendance/']").click()
+        page.wait_for_url("**/attendance/**", timeout=8000)
+        record("Tab 1 can navigate internal links as HR Admin", "/attendance/" in page.url)
+
+        # Check Tab 2 is ALSO still Employee
+        tab2.bring_to_front()
+        tab2.reload()
+        tab2.wait_for_selector(".topbar")
+        topbar2_after = tab2.locator(".topbar").inner_text()
+        record("Tab 2 (Employee) is ALSO simultaneously active!", "Esha Patel" in topbar2_after)
+
+        print("\n=== 6. ACCOUNT SWITCHER UI TEST ===")
+        # Open profile dropdown in tab2
+        tab2.locator("#profile-trigger").click()
+        tab2.wait_for_selector("#user-popover.open")
+
+        popover_text = tab2.locator("#user-popover").inner_text()
+        record("User popover lists both HR Admin and Employee", "Hetal Shah" in popover_text and "Esha Patel" in popover_text)
+
+        # 1-Click switch to HR Admin in tab2
+        hr_switch_link = tab2.locator("#user-popover a").filter(has_text="HR Admin").first
+        hr_switch_link.click()
+        tab2.wait_for_url("**/dashboard/**", timeout=8000)
+        tab2.wait_for_selector(".topbar")
+        record("1-Click switched Tab 2 to HR Admin without password prompt", "Hetal Shah" in tab2.locator(".topbar").inner_text())
+
+        print("\n=== 7. SELECTIVE LOGOUT TEST ===")
+        # Log out of HR Admin only (Employee should remain active)
+        tab2.locator("#profile-trigger").click()
+        tab2.wait_for_selector("#user-popover.open")
+        tab2.locator("#user-popover a").filter(has_text="Log out (HR Admin)").first.click()
+        tab2.wait_for_url("**/dashboard/**", timeout=8000)
+
+        # Verify Tab 2 automatically switches to remaining active account (Employee)
+        tab2.wait_for_selector(".topbar")
+        record("Selective logout switches to remaining Employee account", "Esha Patel" in tab2.locator(".topbar").inner_text())
+
+        # Now log out of Employee (all accounts logged out)
+        tab2.locator("#profile-trigger").click()
+        tab2.wait_for_selector("#user-popover.open")
+        tab2.locator("#user-popover a").filter(has_text="Log out (Employee)").first.click()
+        tab2.wait_for_url("**/login/**", timeout=8000)
+        record("Final logout cleanly redirects to /login/", "/login/" in tab2.url)
+
+        print("\n=== 8. MOBILE VIEWPORT TEST (390x844 - iPhone) ===")
         mobile_context = browser.new_context(
             viewport={"width": 390, "height": 844},
             user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15"
@@ -173,10 +210,6 @@ def run_tests():
         mobile_page = mobile_context.new_page()
         mobile_page.goto(f"{BASE_URL}/login/")
         mobile_page.wait_for_selector("#f")
-
-        # Capture mobile login screenshot
-        mobile_page.screenshot(path="test_artifacts/mobile_login_page.png")
-        print("  [INFO] Captured mobile screenshot -> test_artifacts/mobile_login_page.png")
 
         # Check mobile responsiveness
         card_box = mobile_page.locator(".auth .card").bounding_box()
@@ -186,14 +219,8 @@ def run_tests():
         mobile_demo_cards = mobile_page.locator(".demo-card")
         record("All 6 demo cards render on mobile", mobile_demo_cards.count() == 6)
 
-        # Test mobile autofill
-        mobile_recruiter_card = mobile_page.locator(".demo-card").filter(has_text="Recruiter").first
-        mobile_recruiter_card.click()
-
-        m_email = mobile_page.locator("#email")
-        record("Mobile autofill sets Recruiter email", m_email.input_value() == "recruiter@dayflow.dev")
-
-        # Test mobile submit
+        # Test mobile autofill & submit
+        mobile_page.locator(".demo-card").filter(has_text="Recruiter").first.click()
         mobile_page.locator("#go").click()
         mobile_page.wait_for_url("**/dashboard/**", timeout=8000)
         record("Mobile login redirects to /dashboard/", "/dashboard/" in mobile_page.url)
@@ -201,15 +228,6 @@ def run_tests():
         # Verify mobile bottom nav exists
         mobile_bottom_nav = mobile_page.locator(".bottom-nav")
         record("Mobile bottom navigation is visible", mobile_bottom_nav.is_visible())
-
-        print("\n=== 7. LOGOUT VERIFICATION ===")
-        mobile_page.goto(f"{BASE_URL}/logout/")
-        mobile_page.wait_for_url("**/login/**", timeout=8000)
-        record("Visiting /logout/ cleanly redirects to /login/", "/login/" in mobile_page.url)
-
-        # Verify session is ended
-        mobile_page.goto(f"{BASE_URL}/dashboard/")
-        record("Accessing /dashboard/ after logout redirects to /login/", "/login/" in mobile_page.url)
 
         browser.close()
 

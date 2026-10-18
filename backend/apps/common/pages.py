@@ -30,9 +30,30 @@ def landing(request):
 
 
 def logout_view(request):
-    from django.contrib.auth import logout
-    logout(request)
+    user_id = request.GET.get("user_id")
+    from apps.accounts.services import logout_user
+    if user_id and str(user_id).isdigit():
+        logout_user(request, user_id=int(user_id))
+    elif request.GET.get("all"):
+        from django.contrib.auth import logout
+        logout(request)
+    else:
+        logout_user(request)
     return redirect("/login/")
+
+
+def switch_account_view(request, user_id):
+    multi = list(request.session.get("_multi_accounts", [])) if hasattr(request, "session") else []
+    if user_id in multi:
+        from apps.accounts.models import User
+        user = User.objects.filter(pk=user_id, is_active=True).first()
+        if user:
+            request.session["_active_account_id"] = user.pk
+            request.session["_auth_user_id"] = str(user.pk)
+            request.session["_auth_user_hash"] = user.get_session_auth_hash()
+            request.session.modified = True
+            return redirect(f"/dashboard/?as={user.pk}")
+    return redirect("/dashboard/")
 
 
 def auth_page(template):
@@ -41,6 +62,18 @@ def auth_page(template):
             if template == "auth/login.html":
                 u = request.user
                 emp = getattr(u, "employee", None)
+                multi_users = getattr(request, "multi_accounts", [u])
+                logged_in_accounts = [
+                    {
+                        "id": user.pk,
+                        "name": getattr(user, "employee", None).full_name if getattr(user, "employee", None) else user.email,
+                        "role": user.get_role_display(),
+                        "email": user.email,
+                        "initials": getattr(user, "employee", None).initials if getattr(user, "employee", None) else user.email[:2].upper(),
+                        "is_active": user.pk == u.pk,
+                    }
+                    for user in multi_users
+                ]
                 return render(request, template, {
                     "token": kw.get("token", ""),
                     "verify": settings.REQUIRE_EMAIL_VERIFICATION,
@@ -49,6 +82,7 @@ def auth_page(template):
                     "logged_in_role": u.get_role_display(),
                     "logged_in_email": u.email,
                     "logged_in_initials": emp.initials if emp else u.email[:2].upper(),
+                    "logged_in_accounts": logged_in_accounts,
                 })
             return redirect("/dashboard/")
         return render(request, template, {"token": kw.get("token", ""), "verify": settings.REQUIRE_EMAIL_VERIFICATION})

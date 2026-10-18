@@ -115,11 +115,37 @@ def login_user(request, email: str, password: str) -> User:
         raise ServiceError("Please verify your email before signing in.", 403, {"code": "email_not_verified"})
     user.failed_login_attempts, user.locked_until = 0, None
     user.save(update_fields=["failed_login_attempts", "locked_until"])
-    if getattr(request, "user", None) and request.user.is_authenticated and request.user.pk != user.pk:
-        logout(request)
+
+    multi = list(request.session.get("_multi_accounts", [])) if hasattr(request, "session") else []
+    if getattr(request, "user", None) and request.user.is_authenticated and request.user.pk not in multi:
+        multi.append(request.user.pk)
+    if user.pk not in multi:
+        multi.append(user.pk)
+
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+
+    if hasattr(request, "session"):
+        request.session["_multi_accounts"] = multi
+        request.session["_active_account_id"] = user.pk
+        request.session.modified = True
     return user
 
 
-def logout_user(request):
-    logout(request)
+def logout_user(request, user_id=None):
+    if not hasattr(request, "session"):
+        logout(request)
+        return
+    multi = list(request.session.get("_multi_accounts", []))
+    target_id = user_id or (request.user.pk if getattr(request, "user", None) and request.user.is_authenticated else None)
+    if target_id:
+        target_id = int(target_id) if str(target_id).isdigit() else target_id
+    if target_id and target_id in multi:
+        multi.remove(target_id)
+    if not multi:
+        logout(request)
+    else:
+        request.session["_multi_accounts"] = multi
+        next_id = multi[-1]
+        request.session["_active_account_id"] = next_id
+        request.session["_auth_user_id"] = str(next_id)
+        request.session.modified = True

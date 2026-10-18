@@ -8,10 +8,13 @@
       <a class="brand" href="/dashboard/" style="padding:0"><i><span data-lucide="workflow"></span></i> Dayflow</a>
       <button class="icon-btn sidebar-close" id="sb-close" aria-label="Close menu"><span data-lucide="x"></span></button>
     </div>
-    <a class="brand" href="/dashboard/"><i><span data-lucide="workflow"></span></i> Dayflow</a>
+    <a class="brand desktop-brand" href="/dashboard/"><i><span data-lucide="workflow"></span></i> Dayflow</a>
     <nav class="nav">{% for m in menu %}<a href="{{ m.url }}" data-nav="{{ m.url }}"><span data-lucide="{{ m.icon }}"></span> {{ m.label }}</a>{% endfor %}</nav>
     <div class="spacer"></div>
     <div class="card" style="padding:12px;margin:8px 0;background:#fafaf8;border:1px solid var(--gray)">
+      <div style="margin-bottom:6px">
+        <span class="sm muted" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Active Account</span>
+      </div>
       <a href="/profile/" class="row auto" style="gap:10px;color:inherit;text-decoration:none">
         <span class="avatar sm" style="width:32px;height:32px;font-size:11px">{{ me_initials }}</span>
         <span style="line-height:1.2;flex:1;min-width:0;overflow:hidden">
@@ -19,12 +22,24 @@
           <span class="muted sm">{{ me_role }}</span>
         </span>
       </a>
+      {% if has_multi_accounts %}
+      <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--gray)">
+        <span class="sm muted" style="font-size:10.5px">Switch account:</span>
+        <div class="row auto" style="gap:4px;margin-top:4px;flex-wrap:wrap">
+          {% for acc in logged_in_accounts %}
+          {% if not acc.is_active %}
+          <a href="/switch-account/{{ acc.id }}/" class="badge b-green" style="text-decoration:none;font-size:10.5px;padding:2px 8px" title="{{ acc.name }} ({{ acc.email }})">{{ acc.role }}</a>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
       <div class="row auto" style="gap:6px;margin-top:8px">
-        <a href="/login/" class="btn sm secondary" style="flex:1;font-size:11.5px;padding:3px 6px;min-height:28px;justify-content:center">Switch</a>
-        <a href="/logout/" class="btn sm danger logout-btn" style="flex:1;font-size:11.5px;padding:3px 6px;min-height:28px;justify-content:center">Log out</a>
+        <a href="/login/" class="btn sm secondary" style="flex:1;font-size:11px;padding:3px 6px;min-height:28px;justify-content:center">+ Add Role</a>
+        <a href="/logout/?user_id={{ me_id }}" class="btn sm danger logout-btn" style="flex:1;font-size:11px;padding:3px 6px;min-height:28px;justify-content:center">Log out</a>
       </div>
     </div>
-    <nav class="nav"><a href="/reports/" data-nav="/reports/"><span data-lucide="file-down"></span> Reports</a><a href="/logout/" class="logout-btn" id="logout"><span data-lucide="log-out"></span> Log out</a></nav>
+    <nav class="nav"><a href="/reports/" data-nav="/reports/"><span data-lucide="file-down"></span> Reports</a><a href="/logout/?user_id={{ me_id }}" class="logout-btn" id="logout"><span data-lucide="log-out"></span> Log out</a></nav>
   </aside>
   <div class="main">
     <header class="topbar">
@@ -42,15 +57,35 @@
           <span data-lucide="chevron-down" class="user-text muted" style="width:14px;height:14px"></span>
         </a>
         <div class="user-menu-popover" id="user-popover">
-          <div style="padding:6px 12px 10px">
-            <b style="font-size:13px;display:block">{{ me_name }}</b>
-            <span class="muted sm">{{ me_role }}</span>
+          <div style="padding:6px 10px 8px">
+            <span class="sm muted" style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Signed In Accounts ({{ logged_in_accounts|length }})</span>
           </div>
+          {% for acc in logged_in_accounts %}
+          <a href="/switch-account/{{ acc.id }}/" class="row auto" style="gap:8px;padding:6px 8px;justify-content:space-between;background:{% if acc.is_active %}var(--green-xl){% else %}transparent{% endif %};border-radius:8px;margin-bottom:2px">
+            <span class="row auto" style="gap:8px;align-items:center">
+              <span class="avatar sm" style="width:24px;height:24px;font-size:9.5px">{{ acc.initials }}</span>
+              <span style="line-height:1.2">
+                <b style="font-size:12px;display:block">{{ acc.name }}</b>
+                <span class="muted sm" style="font-size:10px">{{ acc.role }}</span>
+              </span>
+            </span>
+            {% if acc.is_active %}
+            <span class="badge b-green" style="font-size:9px;padding:1px 5px">Active</span>
+            {% else %}
+            <span class="sm" style="font-size:11px;color:var(--green);font-weight:600">Switch</span>
+            {% endif %}
+          </a>
+          {% endfor %}
           <hr>
+          <a href="/login/"><span data-lucide="user-plus"></span> + Sign in with another account</a>
           <a href="/profile/"><span data-lucide="user"></span> My Profile</a>
-          <a href="/login/"><span data-lucide="arrow-left-right"></span> Switch Account</a>
           <hr>
-          <a href="/logout/" class="logout-btn" style="color:var(--red)"><span data-lucide="log-out"></span> Log out</a>
+          <div class="row auto" style="gap:4px;padding:4px">
+            <a href="/logout/?user_id={{ me_id }}" class="btn sm danger logout-btn" style="flex:1;font-size:11px;padding:3px 6px;min-height:26px;justify-content:center">Log out ({{ me_role }})</a>
+            {% if has_multi_accounts %}
+            <a href="/logout/?all=1" class="btn sm secondary" style="flex:1;font-size:11px;padding:3px 6px;min-height:26px;justify-content:center">Log out all</a>
+            {% endif %}
+          </div>
         </div>
       </div>
     </header>
@@ -66,6 +101,16 @@
 </div>
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
+  const tabAcc = new URLSearchParams(location.search).get("as") || sessionStorage.getItem("dayflow_active_account");
+  if (tabAcc) {
+    document.querySelectorAll("aside.sidebar .nav a, nav.bottom-nav a").forEach(a => {
+      const href = a.getAttribute("href");
+      if (href && href.startsWith("/") && !href.includes("as=") && !href.startsWith("/logout") && !href.startsWith("/switch-account") && !href.startsWith("/login")) {
+        a.setAttribute("href", href + (href.includes("?") ? "&" : "?") + "as=" + encodeURIComponent(tabAcc));
+      }
+    });
+  }
+
   document.querySelectorAll("[data-nav]").forEach(a=>{const u=a.dataset.nav;if(location.pathname===u||(u!=="/dashboard/"&&location.pathname.startsWith(u)))a.classList.add("active")});
   const g=document.getElementById("gsearch");let t;
   if(g)g.addEventListener("input",()=>{clearTimeout(t);t=setTimeout(async()=>{

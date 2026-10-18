@@ -5,6 +5,7 @@ from . import api
 urlpatterns = [
     path("register/", api.RegisterView.as_view()),
     path("login/", api.LoginView.as_view()),
+    path("switch-account/", api.SwitchAccountView.as_view()),
     path("logout/", api.LogoutView.as_view()),
     path("me/", api.MeView.as_view()),
     path("verify-email/", api.VerifyEmailView.as_view()),

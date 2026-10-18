@@ -14,7 +14,10 @@ const DF = (() => {
   class ApiError extends Error { constructor(status, body) { super(body.message || "Request failed"); this.status = status; this.body = body; this.errors = body.errors || {}; } }
 
   async function api(url, { method = "GET", body, silent = false } = {}) {
-    const opts = { method, headers: { "X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" };
+    const activeAcc = new URLSearchParams(location.search).get("as") || sessionStorage.getItem("dayflow_active_account");
+    const headers = { "X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest" };
+    if (activeAcc) headers["X-Dayflow-Account"] = activeAcc;
+    const opts = { method, headers, credentials: "same-origin" };
     if (body instanceof FormData) opts.body = body;
     else if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
     let res;
@@ -172,6 +175,14 @@ const DF = (() => {
 
   document.addEventListener("DOMContentLoaded", () => {
     icons();
+    const asParam = new URLSearchParams(location.search).get("as");
+    const bodyAcc = document.body.dataset.meId;
+    if (asParam) {
+      sessionStorage.setItem("dayflow_active_account", asParam);
+    } else if (bodyAcc && !sessionStorage.getItem("dayflow_active_account")) {
+      sessionStorage.setItem("dayflow_active_account", bodyAcc);
+    }
+
     const sb = document.querySelector(".sidebar"), tg = document.querySelector(".menu-toggle"), bd = document.getElementById("sb-backdrop"), sc = document.getElementById("sb-close");
     const openSb = () => { sb && sb.classList.add("open"); bd && bd.classList.add("open"); };
     const closeSb = () => { sb && sb.classList.remove("open"); bd && bd.classList.remove("open"); };
@@ -186,7 +197,24 @@ const DF = (() => {
     }
 
     document.querySelectorAll(".logout-btn, #logout").forEach(lo => {
-      lo.onclick = async e => { e.preventDefault(); await api("/api/auth/logout/", { method: "POST" }); location.href = "/login/"; };
+      lo.onclick = async e => {
+        e.preventDefault();
+        const href = lo.getAttribute("href") || "";
+        const uParam = new URLSearchParams(href.split("?")[1] || "").get("user_id");
+        const allParam = new URLSearchParams(href.split("?")[1] || "").get("all");
+        try {
+          const res = await api("/api/auth/logout/", { method: "POST", body: allParam ? { all: true } : (uParam ? { user_id: uParam } : {}) });
+          if (allParam || !uParam) {
+            sessionStorage.removeItem("dayflow_active_account");
+          } else if (res.data?.redirect?.includes("as=")) {
+            const nextAcc = new URLSearchParams(res.data.redirect.split("?")[1] || "").get("as");
+            if (nextAcc) sessionStorage.setItem("dayflow_active_account", nextAcc);
+          }
+          location.href = res.data?.redirect || "/login/";
+        } catch (err) {
+          location.href = href || "/logout/";
+        }
+      };
     });
   });
   return { esc, api, toast, modal, confirm: confirmBox, form, table, chart, fastapi, badge, date, dt, money, bar, state, icons, ApiError };

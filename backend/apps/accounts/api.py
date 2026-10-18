@@ -63,13 +63,44 @@ class LoginView(ScopedAPIView):
         s = LoginSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         user = services.login_user(request, **s.validated_data)
-        return ok({"user": user_payload(user), "redirect": "/dashboard/"}, "Signed in")
+        return ok({"user": user_payload(user), "redirect": f"/dashboard/?as={user.pk}"}, "Signed in")
+
+
+class SwitchAccountView(APIView):
+    def post(self, request):
+        target = request.data.get("user_id") or request.data.get("email")
+        multi = request.session.get("_multi_accounts", [])
+        user = None
+        if target:
+            from .models import User
+            if str(target).isdigit() and int(target) in multi:
+                user = User.objects.filter(pk=int(target), is_active=True).first()
+            elif "@" in str(target):
+                u = User.objects.filter(email__iexact=str(target), is_active=True).first()
+                if u and u.pk in multi:
+                    user = u
+        if not user:
+            raise ServiceError("Account not found in active sessions.", 404)
+        request.session["_active_account_id"] = user.pk
+        request.session["_auth_user_id"] = str(user.pk)
+        request.session.modified = True
+        return ok({"user": user_payload(user), "redirect": f"/dashboard/?as={user.pk}"}, f"Switched to {user.email}")
 
 
 class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        services.logout_user(request)
-        return ok({}, "Signed out")
+        if request.data.get("all"):
+            from django.contrib.auth import logout
+            logout(request)
+            return ok({"redirect": "/login/"}, "Signed out of all accounts")
+        else:
+            services.logout_user(request, user_id=request.data.get("user_id"))
+            multi = list(request.session.get("_multi_accounts", [])) if hasattr(request, "session") else []
+            if multi:
+                return ok({"remaining_accounts": len(multi), "redirect": f"/dashboard/?as={multi[-1]}"}, "Signed out of account")
+            return ok({"remaining_accounts": 0, "redirect": "/login/"}, "Signed out")
 
 
 class MeView(APIView):
