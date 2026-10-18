@@ -50,9 +50,12 @@ def team_ids(user):
 
 def visible_employee_ids(user):
     """None means 'all employees'. Otherwise a list of Employee pks the user may see."""
-    if user.role in R.HR_ROLES:
+    if not user or not getattr(user, "is_authenticated", False):
+        return []
+    role = getattr(user, "role", None)
+    if role in R.HR_ROLES:
         return None
-    if user.role == R.MANAGER:
+    if role == R.MANAGER:
         return team_ids(user)
     emp = getattr(user, "employee", None)
     return [emp.pk] if emp else []

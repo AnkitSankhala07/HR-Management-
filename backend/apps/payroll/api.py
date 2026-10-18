@@ -68,9 +68,11 @@ class PayrollViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def _is_admin(self):
-        return self.request.user.role in R.PAYROLL_ROLES
+        return bool(self.request.user and getattr(self.request.user, "is_authenticated", False) and getattr(self.request.user, "role", None) in R.PAYROLL_ROLES)
 
     def get_queryset(self):
+        if not getattr(self.request.user, "is_authenticated", False):
+            return Payroll.objects.none()
         qs = Payroll.objects.select_related("employee", "employee__department", "employee__designation")
         if self._is_admin():
             return qs

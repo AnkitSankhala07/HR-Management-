@@ -10,3 +10,4 @@ venv/
 .idea/
 .vscode/
 test_artifacts/
+/db.sqlite3

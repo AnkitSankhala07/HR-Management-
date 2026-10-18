@@ -41,9 +41,11 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
+        if not getattr(self.request.user, "is_authenticated", False):
+            return Employee.objects.none()
         qs = Employee.objects.select_related("user", "department", "designation", "manager")
         ids = services.visible_employee_ids(self.request.user)
-        if self.request.user.role == R.RECRUITER:
+        if getattr(self.request.user, "role", None) == R.RECRUITER:
             return qs.none()
         return qs if ids is None else qs.filter(pk__in=ids)
 

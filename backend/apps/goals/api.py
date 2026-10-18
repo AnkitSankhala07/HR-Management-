@@ -38,12 +38,16 @@ class GoalViewSet(viewsets.ModelViewSet):
         return qs if ids is None else qs.filter(owner_id__in=ids)
 
     def _owner(self, request, data):
-        me = request.user.employee
+        me = getattr(request.user, "employee", None)
         oid = data.get("owner")
-        if not oid or int(getattr(oid, "pk", oid)) == me.pk:
+        if not oid:
+            if not me:
+                raise PermissionDenied("You do not have an employee profile.")
+            return me
+        if me and int(getattr(oid, "pk", oid)) == me.pk:
             return me
         owner = Employee.objects.get(pk=getattr(oid, "pk", oid))
-        if request.user.role in R.HR_ROLES or (request.user.role == R.MANAGER and owner.manager_id == me.pk):
+        if request.user.role in R.HR_ROLES or (me and request.user.role == R.MANAGER and owner.manager_id == me.pk):
             return owner
         raise PermissionDenied("You can only create goals for yourself or your team.")
 
@@ -57,8 +61,8 @@ class GoalViewSet(viewsets.ModelViewSet):
         return ok(self.get_serializer(g).data, "Goal created", 201)
 
     def _can_edit(self, request, g):
-        me = request.user.employee
-        return g.owner_id == me.pk or request.user.role in R.HR_ROLES or (request.user.role == R.MANAGER and g.owner.manager_id == me.pk)
+        me = getattr(request.user, "employee", None)
+        return (me and g.owner_id == me.pk) or request.user.role in R.HR_ROLES or (me and request.user.role == R.MANAGER and g.owner.manager_id == me.pk)
 
     def partial_update(self, request, *a, **kw):
         g = self.get_object()

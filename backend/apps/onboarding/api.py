@@ -31,8 +31,10 @@ class OnboardingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewse
     search_fields = ["employee__first_name", "employee__last_name", "employee__employee_id"]
 
     def get_queryset(self):
+        if not getattr(self.request.user, "is_authenticated", False):
+            return Onboarding.objects.none()
         qs = Onboarding.objects.select_related("employee").prefetch_related("tasks")
-        return qs if self.request.user.role in R.RECRUITMENT_ROLES else qs.filter(employee__user=self.request.user)
+        return qs if getattr(self.request.user, "role", None) in R.RECRUITMENT_ROLES else qs.filter(employee__user=self.request.user)
 
 
 class OnboardingTaskViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
@@ -40,8 +42,10 @@ class OnboardingTaskViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
     http_method_names = ["patch", "head", "options"]
 
     def get_queryset(self):
+        if not getattr(self.request.user, "is_authenticated", False):
+            return OnboardingTask.objects.none()
         qs = OnboardingTask.objects.select_related("onboarding__employee")
-        return qs if self.request.user.role in R.RECRUITMENT_ROLES else qs.filter(onboarding__employee__user=self.request.user)
+        return qs if getattr(self.request.user, "role", None) in R.RECRUITMENT_ROLES else qs.filter(onboarding__employee__user=self.request.user)
 
     def partial_update(self, request, *a, **kw):
         t = self.get_object()

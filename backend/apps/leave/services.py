@@ -68,7 +68,7 @@ def can_review(user, lr: LeaveRequest) -> bool:
         return False   # nobody approves their own leave
     if user.role in R.HR_ROLES:
         return True
-    return user.role == R.MANAGER and lr.employee.manager_id == getattr(user.employee, "pk", None)
+    return user.role == R.MANAGER and lr.employee.manager_id == getattr(getattr(user, "employee", None), "pk", None)
 
 
 @transaction.atomic

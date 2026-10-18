@@ -223,8 +223,10 @@ class InterviewViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
+        if not getattr(self.request.user, "is_authenticated", False):
+            return Interview.objects.none()
         qs = Interview.objects.select_related("application__candidate", "application__job").prefetch_related("interviewers", "feedback__reviewer")
-        if self.request.user.role in R.RECRUITMENT_ROLES:
+        if getattr(self.request.user, "role", None) in R.RECRUITMENT_ROLES:
             return qs
         return qs.filter(interviewers__user=self.request.user)
 

@@ -42,8 +42,10 @@ class DocumentViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Ret
     search_fields = ["title", "employee__first_name", "employee__last_name"]
 
     def get_queryset(self):
+        if not getattr(self.request.user, "is_authenticated", False):
+            return Document.objects.none()
         qs = Document.objects.select_related("employee")
-        return qs if self.request.user.role in R.HR_ROLES else qs.filter(employee__user=self.request.user)
+        return qs if getattr(self.request.user, "role", None) in R.HR_ROLES else qs.filter(employee__user=self.request.user)
 
     def create(self, request, *a, **kw):
         s = self.get_serializer(data=request.data)

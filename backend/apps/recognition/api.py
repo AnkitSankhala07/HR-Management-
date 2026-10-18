@@ -24,7 +24,9 @@ class RecognitionViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.
     def create(self, request, *a, **kw):
         s = self.get_serializer(data=request.data)
         s.is_valid(raise_exception=True)
-        me = request.user.employee
+        me = getattr(request.user, "employee", None)
+        if not me:
+            raise serializers.ValidationError({"detail": "No employee profile found for this account."})
         if s.validated_data["receiver"].pk == me.pk:
             raise serializers.ValidationError({"receiver": "You cannot recognise yourself."})
         r = s.save(giver=me)

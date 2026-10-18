@@ -83,7 +83,7 @@
           <div class="row auto" style="gap:4px;padding:4px">
             <a href="/logout/?user_id={{ me_id }}" class="btn sm danger logout-btn" style="flex:1;font-size:11px;padding:3px 6px;min-height:26px;justify-content:center">Log out ({{ me_role }})</a>
             {% if has_multi_accounts %}
-            <a href="/logout/?all=1" class="btn sm secondary" style="flex:1;font-size:11px;padding:3px 6px;min-height:26px;justify-content:center">Log out all</a>
+            <a href="/logout/?all=1" class="btn sm secondary logout-btn" style="flex:1;font-size:11px;padding:3px 6px;min-height:26px;justify-content:center">Log out all</a>
             {% endif %}
           </div>
         </div>
@@ -101,6 +101,7 @@
 </div>
 <script>
 document.addEventListener("DOMContentLoaded",()=>{
+  // Auto-preserve active account on internal navigation links so tab remains on active role
   const tabAcc = new URLSearchParams(location.search).get("as") || sessionStorage.getItem("dayflow_active_account");
   if (tabAcc) {
     document.querySelectorAll("aside.sidebar .nav a, nav.bottom-nav a").forEach(a => {

@@ -28,7 +28,9 @@ class AnnouncementSerializer(serializers.ModelSerializer):
 def active_for(user):
     now = timezone.now()
     qs = Announcement.objects.select_related("department").filter(published_at__lte=now).filter(Q(expires_at__isnull=True) | Q(expires_at__gte=now))
-    if user.role in R.HR_ROLES:
+    if not user or not getattr(user, "is_authenticated", False):
+        return qs.none()
+    if getattr(user, "role", None) in R.HR_ROLES:
         return qs
     dept = getattr(getattr(user, "employee", None), "department_id", None)
     return qs.filter(Q(audience="COMPANY") | Q(department_id=dept))
@@ -40,7 +42,9 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     search_fields = ["title", "description"]
 
     def get_queryset(self):
-        if self.request.user.role in R.HR_ROLES and self.request.query_params.get("all"):
+        if not getattr(self.request.user, "is_authenticated", False):
+            return Announcement.objects.none()
+        if getattr(self.request.user, "role", None) in R.HR_ROLES and self.request.query_params.get("all"):
             return Announcement.objects.select_related("department")
         return active_for(self.request.user)
 

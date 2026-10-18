@@ -83,6 +83,7 @@ class SwitchAccountView(APIView):
             raise ServiceError("Account not found in active sessions.", 404)
         request.session["_active_account_id"] = user.pk
         request.session["_auth_user_id"] = str(user.pk)
+        request.session["_auth_user_hash"] = user.get_session_auth_hash()
         request.session.modified = True
         return ok({"user": user_payload(user), "redirect": f"/dashboard/?as={user.pk}"}, f"Switched to {user.email}")
 
@@ -177,5 +178,5 @@ class CsrfView(ScopedAPIView):
 # ---- OpenAPI documentation for the plain APIViews
 for _cls, _req in ((RegisterView, RegisterSerializer), (LoginView, LoginSerializer)):
     extend_schema(request=_req, responses=OpenApiTypes.OBJECT, tags=["Authentication"])(_cls)
-for _cls in (LogoutView, MeView, VerifyEmailView, ResendVerificationView, ForgotPasswordView, ResetPasswordView, ChangePasswordView, ServiceTokenView, CsrfView):
+for _cls in (SwitchAccountView, LogoutView, MeView, VerifyEmailView, ResendVerificationView, ForgotPasswordView, ResetPasswordView, ChangePasswordView, ServiceTokenView, CsrfView):
     extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT, tags=["Authentication"])(_cls)

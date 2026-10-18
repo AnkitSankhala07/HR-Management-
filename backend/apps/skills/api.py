@@ -74,7 +74,9 @@ class EmployeeSkillViewSet(viewsets.ModelViewSet):
             d["skill"], _ = Skill.objects.get_or_create(name=name.strip().title())
         if "skill" not in d:
             raise serializers.ValidationError({"skill": "Choose a skill or enter a new one."})
-        emp = request.user.employee
+        emp = getattr(request.user, "employee", None)
+        if not emp:
+            raise ServiceError("No employee profile found for this account.", 404)
         obj, created = EmployeeSkill.objects.update_or_create(employee=emp, skill=d.pop("skill"), defaults=d)
         return ok(self.get_serializer(obj).data, "Skill saved", 201 if created else 200)
 

@@ -146,6 +146,11 @@ def logout_user(request, user_id=None):
     else:
         request.session["_multi_accounts"] = multi
         next_id = multi[-1]
-        request.session["_active_account_id"] = next_id
-        request.session["_auth_user_id"] = str(next_id)
-        request.session.modified = True
+        next_user = User.objects.filter(pk=next_id, is_active=True).first()
+        if next_user:
+            request.session["_active_account_id"] = next_id
+            request.session["_auth_user_id"] = str(next_id)
+            request.session["_auth_user_hash"] = next_user.get_session_auth_hash()
+            request.session.modified = True
+        else:
+            logout(request)

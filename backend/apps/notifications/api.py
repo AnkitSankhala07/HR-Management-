@@ -17,6 +17,8 @@ class NotificationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
     filterset_fields = ["is_read", "notification_type"]
 
     def get_queryset(self):
+        if not getattr(self.request.user, "is_authenticated", False):
+            return Notification.objects.none()
         return Notification.objects.filter(user=self.request.user)
 
     @action(detail=False, methods=["get"], url_path="unread-count")

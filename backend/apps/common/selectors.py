@@ -30,8 +30,16 @@ def _last_months(n=6):
 
 
 def employee_dashboard(user):
-    emp = user.employee
+    emp = getattr(user, "employee", None)
     today = timezone.localdate()
+    if not emp:
+        return {
+            "attendance": None, "timeline": [], "month_present": 0,
+            "balances": [], "leaves": [], "payroll": None, "goals": [],
+            "recognitions": [], "announcements": active_for(user)[:3],
+            "notifications": Notification.objects.filter(user=user)[:5],
+            "events": upcoming_events(),
+        }
     att = Attendance.objects.filter(employee=emp, attendance_date=today).first()
     from apps.attendance.services import timeline
     month_qs = Attendance.objects.filter(employee=emp, attendance_date__year=today.year, attendance_date__month=today.month)
