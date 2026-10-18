@@ -115,6 +115,8 @@ def login_user(request, email: str, password: str) -> User:
         raise ServiceError("Please verify your email before signing in.", 403, {"code": "email_not_verified"})
     user.failed_login_attempts, user.locked_until = 0, None
     user.save(update_fields=["failed_login_attempts", "locked_until"])
+    if getattr(request, "user", None) and request.user.is_authenticated and request.user.pk != user.pk:
+        logout(request)
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     return user
 

@@ -6,6 +6,7 @@ S = p.simple
 urlpatterns = [
     path("", p.landing, name="landing"),
     path("login/", p.auth_page("auth/login.html")),
+    path("logout/", p.logout_view, name="logout"),
     path("register/", p.auth_page("auth/register.html")),
     path("forgot-password/", p.auth_page("auth/forgot.html")),
     path("reset-password/<str:token>/", p.auth_page("auth/reset_password.html")),

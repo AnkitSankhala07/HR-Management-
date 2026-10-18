@@ -1,48 +1,173 @@
 {% extends "base.html" %}{% block title %}Sign in{% endblock %}
-{% block body %}{% include "auth/_shell_top.html" %}
-<h1>Welcome back</h1><p class="muted">Every workday, perfectly aligned.</p>
-<div id="msg" class="badge b-red hide" style="display:block;white-space:normal;margin-bottom:12px" role="alert"></div>
-<form id="f" novalidate>
-<div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="username"></div>
-<div class="field"><label for="password">Password</label><input id="password" name="password" type="password" required autocomplete="current-password"></div>
-<button class="btn block lg" id="go">Sign in</button></form>
-<p class="sm" style="margin-top:16px"><a href="/forgot-password/">Forgot password?</a> · <a href="/register/">Create an account</a></p>
-<p class="sm muted">Looking for a job? <a href="/careers/">View open roles</a></p>
-</div></div>{% endblock %}
-{% block scripts %}<script>
-const f=document.getElementById("f"),m=document.getElementById("msg");
+{% block body %}
+<div class="auth">
+  <div class="card">
+    <a class="brand" href="/" style="padding-bottom:12px"><i><span data-lucide="workflow"></span></i> Dayflow</a>
+    <h1>Welcome back</h1>
+    <p class="muted sm" style="margin-top:2px;margin-bottom:14px">Every workday, perfectly aligned.</p>
+
+    {% if already_authenticated %}
+    <div class="logged-in-banner">
+      <div class="row auto" style="justify-content:space-between;align-items:center;gap:10px">
+        <span class="row auto" style="gap:8px;align-items:center">
+          <span class="avatar" style="width:28px;height:28px;font-size:11px">{{ logged_in_initials }}</span>
+          <span>Signed in as <b>{{ logged_in_name }}</b> ({{ logged_in_role }})</span>
+        </span>
+        <a href="/logout/" class="btn sm danger" style="padding:4px 10px;min-height:28px;font-size:11.5px">Sign out</a>
+      </div>
+      <div class="row auto" style="gap:8px;margin-top:8px">
+        <a href="/dashboard/" class="btn sm secondary" style="padding:4px 12px;min-height:28px">Go to Dashboard</a>
+        <span class="muted sm" style="align-self:center">or select a role below to switch:</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="demo-accounts">
+      <div class="demo-accounts-head">
+        <span class="demo-accounts-title"><i data-lucide="sparkles"></i> Autofill Demo Accounts</span>
+        <span class="sm muted">Tap any role</span>
+      </div>
+      <div class="demo-grid" id="demo-grid"></div>
+    </div>
+
+    <div id="msg" class="badge b-red hide" style="display:block;white-space:normal;margin-bottom:14px;padding:8px 12px;border-radius:10px" role="alert"></div>
+
+    <form id="f" novalidate>
+      <div class="field">
+        <label for="email">Work Email</label>
+        <input id="email" name="email" type="email" required autocomplete="username" placeholder="e.g. hradmin@dayflow.dev">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="pw-wrapper">
+          <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••">
+          <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Toggle password visibility" tabindex="-1">
+            <i data-lucide="eye" id="pw-icon"></i>
+          </button>
+        </div>
+      </div>
+      <button class="btn block lg" id="go" style="margin-top:6px">
+        <span id="btn-text">Sign in</span>
+      </button>
+    </form>
+
+    <p class="sm" style="margin-top:16px;text-align:center">
+      <a href="/forgot-password/">Forgot password?</a> · <a href="/register/">Create an account</a>
+    </p>
+    <p class="sm muted" style="margin-top:6px;text-align:center">
+      Looking for a job? <a href="/careers/">View open roles</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DEMO_USERS = [
+  { role: "HR Admin", name: "Hetal Shah", email: "hradmin@dayflow.dev", badge: "b-green", initials: "HS" },
+  { role: "HR Manager", name: "Himani Desai", email: "hrmanager@dayflow.dev", badge: "b-green", initials: "HD" },
+  { role: "Super Admin", name: "Sanjay Kapoor", email: "superadmin@dayflow.dev", badge: "b-amber", initials: "SK" },
+  { role: "Manager", name: "Manav Joshi", email: "manager@dayflow.dev", badge: "b-blue", initials: "MJ" },
+  { role: "Recruiter", name: "Ritika Mehta", email: "recruiter@dayflow.dev", badge: "b-blue", initials: "RM" },
+  { role: "Employee", name: "Esha Patel", email: "employee@dayflow.dev", badge: "b-green", initials: "EP" }
+];
+const DEMO_PASSWORD = "Dayflow@2026";
+
+const grid = document.getElementById("demo-grid");
+const f = document.getElementById("f");
+const m = document.getElementById("msg");
+const goBtn = document.getElementById("go");
+const btnText = document.getElementById("btn-text");
+const pwInput = document.getElementById("password");
+const pwToggle = document.getElementById("pw-toggle");
+const pwIcon = document.getElementById("pw-icon");
+
 fetch("/api/auth/csrf/");
-f.onsubmit=async e=>{e.preventDefault();m.classList.add("hide");const b=document.getElementById("go");b.disabled=true;
- try{
-  const res = await DF.api("/api/auth/login/",{method:"POST",body:{email:f.email.value,password:f.password.value},silent:true});
-  const next = new URLSearchParams(location.search).get("next");
-  location.href = (next && next.startsWith("/") && !next.startsWith("//")) ? next : (res.data?.redirect || "/dashboard/");
- }
- catch(err){
-  m.innerHTML = "";
-  const txt = document.createElement("span");
-  txt.textContent = err.message;
-  m.appendChild(txt);
-  if ((err.errors && err.errors.code === "email_not_verified") || (err.message && err.message.toLowerCase().includes("verify"))) {
-    const link = document.createElement("a");
-    link.href = "#";
-    link.textContent = "Resend verification email";
-    link.style.display = "block";
-    link.style.marginTop = "6px";
-    link.style.fontWeight = "600";
-    link.style.textDecoration = "underline";
-    link.onclick = async ev => {
-      ev.preventDefault();
-      try {
-        const res = await DF.api("/api/auth/resend-verification/", {method: "POST", body: {email: f.email.value}});
-        DF.toast(res.message || "If the account exists and is unverified, a new link has been sent.", "ok");
-      } catch(e) {
-        DF.toast(e.message || "Could not send verification email", "err");
-      }
-    };
-    m.appendChild(link);
+
+function selectUser(u, el) {
+  document.querySelectorAll(".demo-card").forEach(c => c.classList.remove("active"));
+  if (el) el.classList.add("active");
+
+  f.email.value = u.email;
+  f.password.value = DEMO_PASSWORD;
+  f.email.dispatchEvent(new Event("input", { bubbles: true }));
+  f.password.dispatchEvent(new Event("input", { bubbles: true }));
+
+  btnText.textContent = "Sign in as " + u.name + " (" + u.role + ")";
+  m.classList.add("hide");
+}
+
+grid.innerHTML = DEMO_USERS.map((u, i) => `
+  <button type="button" class="demo-card" data-idx="${i}" aria-label="Autofill ${u.name} (${u.role})">
+    <span class="avatar">${u.initials}</span>
+    <span class="demo-card-info">
+      <span class="demo-card-role"><span class="badge ${u.badge}" style="font-size:9.5px;padding:1px 6px">${u.role}</span><i data-lucide="check" class="demo-card-check" style="width:13px;height:13px"></i></span>
+      <span class="demo-card-name">${u.name}</span>
+      <span class="demo-card-email">${u.email}</span>
+    </span>
+  </button>
+`).join("");
+
+grid.querySelectorAll(".demo-card").forEach(btn => {
+  btn.onclick = () => {
+    const u = DEMO_USERS[+btn.dataset.idx];
+    selectUser(u, btn);
+  };
+});
+
+pwToggle.onclick = () => {
+  const isPw = pwInput.type === "password";
+  pwInput.type = isPw ? "text" : "password";
+  pwIcon.setAttribute("data-lucide", isPw ? "eye-off" : "eye");
+  window.lucide && lucide.createIcons();
+};
+
+f.onsubmit = async e => {
+  e.preventDefault();
+  m.classList.add("hide");
+  goBtn.disabled = true;
+  const originalText = btnText.textContent;
+  btnText.textContent = "Signing in...";
+
+  try {
+    const res = await DF.api("/api/auth/login/", {
+      method: "POST",
+      body: { email: f.email.value.trim(), password: f.password.value },
+      silent: true
+    });
+    const next = new URLSearchParams(location.search).get("next");
+    location.href = (next && next.startsWith("/") && !next.startsWith("//")) ? next : (res.data?.redirect || "/dashboard/");
+  } catch (err) {
+    m.innerHTML = "";
+    const txt = document.createElement("span");
+    txt.textContent = err.message || "Invalid email or password";
+    m.appendChild(txt);
+
+    if ((err.errors && err.errors.code === "email_not_verified") || (err.message && err.message.toLowerCase().includes("verify"))) {
+      const link = document.createElement("a");
+      link.href = "#";
+      link.textContent = "Resend verification email";
+      link.style.display = "block";
+      link.style.marginTop = "6px";
+      link.style.fontWeight = "600";
+      link.style.textDecoration = "underline";
+      link.onclick = async ev => {
+        ev.preventDefault();
+        try {
+          const res = await DF.api("/api/auth/resend-verification/", { method: "POST", body: { email: f.email.value } });
+          DF.toast(res.message || "If the account exists and is unverified, a new link has been sent.", "ok");
+        } catch (e) {
+          DF.toast(e.message || "Could not send verification email", "err");
+        }
+      };
+      m.appendChild(link);
+    }
+    m.classList.remove("hide");
+    goBtn.disabled = false;
+    btnText.textContent = originalText;
   }
-  m.classList.remove("hide");
-  b.disabled = false;
- }};
-</script>{% endblock %}
+};
+
+window.lucide && lucide.createIcons();
+</script>
+{% endblock %}

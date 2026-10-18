@@ -29,9 +29,27 @@ def landing(request):
     return render(request, "landing.html")
 
 
+def logout_view(request):
+    from django.contrib.auth import logout
+    logout(request)
+    return redirect("/login/")
+
+
 def auth_page(template):
     def view(request, **kw):
         if request.user.is_authenticated and template != "auth/reset_password.html":
+            if template == "auth/login.html":
+                u = request.user
+                emp = getattr(u, "employee", None)
+                return render(request, template, {
+                    "token": kw.get("token", ""),
+                    "verify": settings.REQUIRE_EMAIL_VERIFICATION,
+                    "already_authenticated": True,
+                    "logged_in_name": emp.full_name if emp else u.email,
+                    "logged_in_role": u.get_role_display(),
+                    "logged_in_email": u.email,
+                    "logged_in_initials": emp.initials if emp else u.email[:2].upper(),
+                })
             return redirect("/dashboard/")
         return render(request, template, {"token": kw.get("token", ""), "verify": settings.REQUIRE_EMAIL_VERIFICATION})
     return view

@@ -1,12 +1,30 @@
 {% extends "base.html" %}{% load static %}
 {% block title %}{{ title|default:"Dashboard" }}{% endblock %}
 {% block body %}
+<div class="sidebar-backdrop" id="sb-backdrop"></div>
 <div class="app">
   <aside class="sidebar" aria-label="Main navigation">
+    <div class="sidebar-head-mobile">
+      <a class="brand" href="/dashboard/" style="padding:0"><i><span data-lucide="workflow"></span></i> Dayflow</a>
+      <button class="icon-btn sidebar-close" id="sb-close" aria-label="Close menu"><span data-lucide="x"></span></button>
+    </div>
     <a class="brand" href="/dashboard/"><i><span data-lucide="workflow"></span></i> Dayflow</a>
     <nav class="nav">{% for m in menu %}<a href="{{ m.url }}" data-nav="{{ m.url }}"><span data-lucide="{{ m.icon }}"></span> {{ m.label }}</a>{% endfor %}</nav>
     <div class="spacer"></div>
-    <nav class="nav"><a href="/reports/" data-nav="/reports/"><span data-lucide="file-down"></span> Reports</a><a href="#" id="logout"><span data-lucide="log-out"></span> Log out</a></nav>
+    <div class="card" style="padding:12px;margin:8px 0;background:#fafaf8;border:1px solid var(--gray)">
+      <a href="/profile/" class="row auto" style="gap:10px;color:inherit;text-decoration:none">
+        <span class="avatar sm" style="width:32px;height:32px;font-size:11px">{{ me_initials }}</span>
+        <span style="line-height:1.2;flex:1;min-width:0;overflow:hidden">
+          <b style="font-size:12.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ me_name }}</b>
+          <span class="muted sm">{{ me_role }}</span>
+        </span>
+      </a>
+      <div class="row auto" style="gap:6px;margin-top:8px">
+        <a href="/login/" class="btn sm secondary" style="flex:1;font-size:11.5px;padding:3px 6px;min-height:28px;justify-content:center">Switch</a>
+        <a href="/logout/" class="btn sm danger logout-btn" style="flex:1;font-size:11.5px;padding:3px 6px;min-height:28px;justify-content:center">Log out</a>
+      </div>
+    </div>
+    <nav class="nav"><a href="/reports/" data-nav="/reports/"><span data-lucide="file-down"></span> Reports</a><a href="/logout/" class="logout-btn" id="logout"><span data-lucide="log-out"></span> Log out</a></nav>
   </aside>
   <div class="main">
     <header class="topbar">
@@ -14,7 +32,27 @@
       {% if me_role != "Employee" or True %}<div class="search"><span data-lucide="search"></span><input id="gsearch" type="search" placeholder="Search employees by ID, name, email..." aria-label="Global employee search" autocomplete="off"></div>{% endif %}
       <div class="spacer"></div>
       <a class="icon-btn" href="/notifications/" aria-label="Notifications"><span data-lucide="bell"></span>{% if unread_count %}<span class="dot" id="unread-dot">{{ unread_count }}</span>{% endif %}</a>
-      <a href="/profile/" class="row auto" style="gap:10px;color:inherit"><span class="avatar">{{ me_initials }}</span><span style="line-height:1.2"><b>{{ me_name }}</b><br><span class="muted sm">{{ me_role }}</span></span></a>
+      <div style="position:relative">
+        <a href="#" id="profile-trigger" class="row auto" style="gap:8px;color:inherit;text-decoration:none;padding:4px;border-radius:12px" aria-label="User menu">
+          <span class="avatar">{{ me_initials }}</span>
+          <span class="user-text" style="line-height:1.2;text-align:left">
+            <b>{{ me_name }}</b><br>
+            <span class="muted sm">{{ me_role }}</span>
+          </span>
+          <span data-lucide="chevron-down" class="user-text muted" style="width:14px;height:14px"></span>
+        </a>
+        <div class="user-menu-popover" id="user-popover">
+          <div style="padding:6px 12px 10px">
+            <b style="font-size:13px;display:block">{{ me_name }}</b>
+            <span class="muted sm">{{ me_role }}</span>
+          </div>
+          <hr>
+          <a href="/profile/"><span data-lucide="user"></span> My Profile</a>
+          <a href="/login/"><span data-lucide="arrow-left-right"></span> Switch Account</a>
+          <hr>
+          <a href="/logout/" class="logout-btn" style="color:var(--red)"><span data-lucide="log-out"></span> Log out</a>
+        </div>
+      </div>
     </header>
     <main class="content" id="main">{% block content %}{% endblock %}</main>
   </div>
@@ -23,7 +61,7 @@
     <a href="/attendance/" data-nav="/attendance/"><span data-lucide="clock"></span>Attendance</a>
     <a href="/leave/" data-nav="/leave/"><span data-lucide="calendar-days"></span>Leave</a>
     <a href="/payroll/" data-nav="/payroll/"><span data-lucide="wallet"></span>Payroll</a>
-    <a href="/notifications/" data-nav="/notifications/"><span data-lucide="bell"></span>Alerts</a>
+    <a href="/profile/" data-nav="/profile/"><span data-lucide="user"></span>Profile</a>
   </nav>
 </div>
 <script>

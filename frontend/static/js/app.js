@@ -172,10 +172,22 @@ const DF = (() => {
 
   document.addEventListener("DOMContentLoaded", () => {
     icons();
-    const sb = document.querySelector(".sidebar"), tg = document.querySelector(".menu-toggle");
-    if (tg) tg.onclick = () => sb.classList.toggle("open");
-    const lo = document.getElementById("logout");
-    if (lo) lo.onclick = async e => { e.preventDefault(); await api("/api/auth/logout/", { method: "POST" }); location.href = "/login/"; };
+    const sb = document.querySelector(".sidebar"), tg = document.querySelector(".menu-toggle"), bd = document.getElementById("sb-backdrop"), sc = document.getElementById("sb-close");
+    const openSb = () => { sb && sb.classList.add("open"); bd && bd.classList.add("open"); };
+    const closeSb = () => { sb && sb.classList.remove("open"); bd && bd.classList.remove("open"); };
+    if (tg) tg.onclick = () => { sb && sb.classList.contains("open") ? closeSb() : openSb(); };
+    if (bd) bd.onclick = closeSb;
+    if (sc) sc.onclick = closeSb;
+
+    const profileBtn = document.getElementById("profile-trigger"), popover = document.getElementById("user-popover");
+    if (profileBtn && popover) {
+      profileBtn.onclick = e => { e.preventDefault(); e.stopPropagation(); popover.classList.toggle("open"); };
+      document.addEventListener("click", e => { if (!e.target.closest("#user-popover") && !e.target.closest("#profile-trigger")) popover.classList.remove("open"); });
+    }
+
+    document.querySelectorAll(".logout-btn, #logout").forEach(lo => {
+      lo.onclick = async e => { e.preventDefault(); await api("/api/auth/logout/", { method: "POST" }); location.href = "/login/"; };
+    });
   });
   return { esc, api, toast, modal, confirm: confirmBox, form, table, chart, fastapi, badge, date, dt, money, bar, state, icons, ApiError };
 })();
